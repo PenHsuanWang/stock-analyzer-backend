@@ -8,14 +8,14 @@ from stockana.data_io.data_fetcher import YFinanceFetcher
 class StockDataFetcherApp:
 
     _app = None
-    _app_lock = threading.Lock
+    _app_lock = threading.Lock()
 
     _is_initialized = None
 
     def __new__(cls, *args, **kwargs):
         with cls._app_lock:
             if cls._app is None:
-                cls._app = super(StockDataFetcherApp).__new__(cls)
+                cls._app = super().__new__(cls)
                 cls._app._is_initialized = False
             return cls._app
 
@@ -33,7 +33,7 @@ class StockDataFetcherApp:
         :return:
         """
         try:
-            self._data_fetcher.fetch_from_source(stock_id, start_date, end_date)
+            self._data_fetcher.fetch_from_source(stock_id=stock_id, start_date=start_date, end_date=end_date)
         except Exception as e:
             print(f"error happen when fetching data. please check the input stock_id and time range. Full stack error: {e}")
             raise RuntimeError
