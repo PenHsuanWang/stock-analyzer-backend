@@ -1,10 +1,16 @@
 """
-the data manager is responsible for interact stored data in the redis db
-include the operation like check data, get data, and delete data...
+The data manager is responsible for interacting with stored data in the Redis db.
+This includes operations like checking data, getting data, and deleting data.
 """
 
 import redis
 import pandas as pd
+import asyncio  # import asyncio
+
+
+class DataNotFoundError(Exception):
+    """Custom exception for when data is not found in Redis."""
+    pass
 
 
 class DataIOButler:
@@ -16,9 +22,12 @@ class DataIOButler:
         :param port: Redis server port.
         :param db: Redis database number.
         """
-        self._redis_client = redis.StrictRedis(host=host, port=port, db=db)
+        self._redis_client = redis.StrictRedis(
+            connection_pool=redis.ConnectionPool(host=host, port=port, db=db)
+        )
 
-    def _generate_key(self, stock_id: str, start_date: str, end_date: str) -> str:
+    @staticmethod
+    def _generate_key(stock_id: str, start_date: str, end_date: str) -> str:
         """
         Generate a consistent Redis key based on stock information.
 
@@ -39,7 +48,7 @@ class DataIOButler:
         :return: True if data exists, else False.
         """
         key = self._generate_key(stock_id, start_date, end_date)
-        return self._redis_client.exists(key)
+        return bool(self._redis_client.exists(key))
 
     def get_data(self, stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
         """
@@ -51,12 +60,13 @@ class DataIOButler:
         :return: Stock data as a DataFrame.
         """
         key = self._generate_key(stock_id, start_date, end_date)
-        data_json = self._redis_client.get(key)
+        data_json_bytes = self._redis_client.get(key)
 
-        if data_json is None:
-            return None
+        if data_json_bytes is None:
+            raise DataNotFoundError("No data found for the given stock parameters in Redis.")
 
-        return pd.read_json(data_json, orient="records")
+        data_json_str = data_json_bytes.decode('utf-8')  # decode bytes to string
+        return pd.read_json(data_json_str, orient="records")
 
     def update_data(self, stock_id: str, start_date: str, end_date: str, updated_dataframe: pd.DataFrame) -> None:
         """
@@ -66,7 +76,6 @@ class DataIOButler:
         :param start_date: Start date for the stock data.
         :param end_date: End date for the stock data.
         :param updated_dataframe: The updated dataframe.
-        :return: None
         """
         key = self._generate_key(stock_id, start_date, end_date)
         # Convert DataFrame to JSON and store it in Redis
@@ -82,6 +91,33 @@ class DataIOButler:
         :return: True if deletion was successful, else False.
         """
         key = self._generate_key(stock_id, start_date, end_date)
-        return self._redis_client.delete(key)
+        return bool(self._redis_client.delete(key))
 
     # Add any additional data management methods as needed.
+
+
+if __name__ == "__main__":
+    data_io_butler = DataIOButler()
+
+    # List all keys in Redis matching the pattern 'stock_data:*'
+    keys = data_io_butler._redis_client.keys(pattern="stock_data:*")
+    if not keys:
+        print("No stock data keys found in Redis.")
+        exit()
+
+    # Just fetching data for the first key as an example
+    key = keys[0].decode('utf-8')  # Convert bytes to string
+    print(f"Fetching data for key: {key}")
+
+    # Extract stock_id, start_date, and end_date from the key
+    _, stock_id, start_date, end_date = key.split(":")  # Assumes the key format is consistent
+
+    def fetch_and_print():
+        try:
+            # Remove await since get_data is not asynchronous
+            data_frame = data_io_butler.get_data(stock_id, start_date, end_date)
+            print(data_frame.head())
+        except DataNotFoundError as e:
+            print(str(e))
+
+    fetch_and_print()
