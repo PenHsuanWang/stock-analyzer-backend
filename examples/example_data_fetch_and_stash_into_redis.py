@@ -5,7 +5,7 @@ url = "http://localhost:8000/stock_data/fetch_and_stash"
 
 # Define the payload with stock details
 data = {
-    "stock_id": "AAPL",
+    "stock_id": "TSM",
     "start_date": "2023-01-01",
     "end_date": "2023-10-10"
 }

@@ -2,7 +2,7 @@ import threading
 
 import pandas as pd
 import redis
-from stockana.data_io.data_fetcher import YFinanceFetcher
+from src.utils.data_io.data_fetcher import YFinanceFetcher
 
 
 class StockDataFetcherApp:
