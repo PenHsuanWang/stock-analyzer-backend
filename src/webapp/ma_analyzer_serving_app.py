@@ -1,6 +1,6 @@
 import threading
 from core.manager.data_manager import DataIOButler, DataNotFoundError
-from stockana.analyzer.moving_average_analyzer import MovingAverageAnalyzer
+from core.analyzer.moving_average_analyzer import MovingAverageAnalyzer
 
 
 class MovingAverageAnalyzerApp:
@@ -19,7 +19,8 @@ class MovingAverageAnalyzerApp:
         if not self._is_initialized:
             self._data_io_butler = DataIOButler()
 
-    def compute_and_store_moving_average(self, stock_id: str, start_date: str, end_date: str,
+    @staticmethod
+    def compute_and_store_moving_average(stock_id: str, start_date: str, end_date: str,
                                          window_sizes: list[int]) -> None:
         """
         Computes the moving averages and updates the Redis store.
@@ -30,25 +31,14 @@ class MovingAverageAnalyzerApp:
         :param window_sizes: List of window sizes for moving average calculation.
         :return: None
         """
-        # Fetch stock data from Redis
-        try:
-            stock_data = self._data_io_butler.get_data(stock_id, start_date, end_date)
-        except DataNotFoundError:
-            print(f"No data found for stock: {stock_id} between {start_date} and {end_date}")
-            return
 
-        # Create a MovingAverageAnalyzer with the fetched data
-        ma_analyzer = MovingAverageAnalyzer(stock_data)
-
-        # Calculate moving averages for the data
-        for window_size in window_sizes:
-            ma_analyzer.calculating_moving_average(window_size)
-
-        # Get the updated DataFrame after calculation
-        updated_stock_data = ma_analyzer.get_analysis_data()
-
-        # Store the updated data back to Redis
-        self._data_io_butler.update_data(stock_id, start_date, end_date, updated_stock_data)
+        ma_analyzer = MovingAverageAnalyzer()
+        ma_analyzer.calculate_moving_average(
+            stock_id=stock_id,
+            start_date=start_date,
+            end_date=end_date,
+            window_sizes=window_sizes
+        )
 
 
 def get_app():

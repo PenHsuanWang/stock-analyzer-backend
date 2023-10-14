@@ -2,9 +2,9 @@ from stockana import calc_time_based
 from core.manager.data_manager import DataIOButler, DataNotFoundError
 
 
-class MAAnalyzer:
-    def __init__(self, data_io_butler=None):
-        self.data_io_butler = data_io_butler or DataIOButler()
+class MovingAverageAnalyzer:
+    def __init__(self):
+        self.data_io_butler = DataIOButler()
 
     def calculate_moving_average(self, stock_id: str, start_date: str, end_date: str, window_sizes: list[int]) -> None:
         """
@@ -33,16 +33,6 @@ class MAAnalyzer:
             for i in window_sizes:
                 stock_data[f"MA_{i}_days"] = calc_time_based.calculate_moving_average(stock_data["Close"], i)
 
-            # # Initialize StockPriceAnalyzer with the fetched stock data
-            # analyzer = MovingAverageAnalyzer(stock_data)
-            #
-            # # Calculate moving averages for all window sizes
-            # for window_size in window_sizes:
-            #     analyzer.calculating_moving_average(window_size)
-            #
-            # # Get the updated dataframe
-            # updated_stock_data = analyzer.get_analysis_data()
-
             # Update the Redis data with the new dataframe
             self.data_io_butler.update_data(stock_id, start_date, end_date, stock_data)
 
@@ -57,8 +47,7 @@ class MAAnalyzer:
 
 if __name__ == "__main__":
     # Initialize the data manager and moving average analyzer
-    data_io_butler = DataIOButler()
-    ma_analyzer = MAAnalyzer(data_io_butler)
+    ma_analyzer = MovingAverageAnalyzer()
 
     # Define some test parameters
     stock_id = "TSM"  # This should be a stock ID that you have stored in Redis
@@ -70,6 +59,7 @@ if __name__ == "__main__":
     ma_analyzer.calculate_moving_average(stock_id, start_date, end_date, window_sizes)
 
     # Fetch the updated data from Redis to verify
+    data_io_butler = DataIOButler()
     updated_data = data_io_butler.get_data(stock_id, start_date, end_date)
     print(updated_data.head(30))  # Display the first few rows of the updated data
 
