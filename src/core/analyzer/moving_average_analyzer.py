@@ -1,10 +1,22 @@
+import logging
+import threading
+import traceback
+
+
 from stockana import calc_time_based
 from core.manager.data_manager import DataIOButler, DataNotFoundError
 
 
+# Initialize logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 class MovingAverageAnalyzer:
+
     def __init__(self):
         self.data_io_butler = DataIOButler()
+        self.redis_lock = threading.Lock()  # Lock for Redis operations
 
     def calculate_moving_average(self, stock_id: str, start_date: str, end_date: str, window_sizes: list[int]) -> None:
         """
@@ -23,7 +35,7 @@ class MovingAverageAnalyzer:
         """
 
         if not window_sizes:
-            print("No window sizes provided for moving average calculation.")
+            logger.warning("No window sizes provided for moving average calculation.")
             return
 
         try:
@@ -34,15 +46,18 @@ class MovingAverageAnalyzer:
                 stock_data[f"MA_{i}_days"] = calc_time_based.calculate_moving_average(stock_data["Close"], i)
 
             # Update the Redis data with the new dataframe
-            self.data_io_butler.update_data(stock_id, start_date, end_date, stock_data)
+            with self.redis_lock:  # Ensure thread safety for Redis operations
+                self.data_io_butler.update_data(stock_id, start_date, end_date, stock_data)
 
-        except DataNotFoundError:
-            print(f"No data found for stock ID {stock_id} from {start_date} to {end_date} in Redis.")
+        except DataNotFoundError as de:
+            print(de)
+            logger.error(f"No data found for stock ID {stock_id} from {start_date} to {end_date} in Redis.")
+            raise
         except Exception as e:
-            # You can provide more specific exceptions above this general one
-            # to handle different types of errors differently.
-            print(f"An error occurred: {e}")
-    # Add any additional analysis methods as needed.
+            print(e)
+            e.with_traceback()
+            logger.exception(f"An error occurred: {e}")
+
 
 
 if __name__ == "__main__":

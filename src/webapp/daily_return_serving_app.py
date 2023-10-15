@@ -6,18 +6,13 @@ from core.analyzer.daily_return_analyzer import DailyReturnAnalyzer
 class DailyReturnApp:
     _app = None
     _app_lock = threading.Lock()
-    _is_initialized = None
 
     def __new__(cls, *args, **kwargs):
         with cls._app_lock:
             if cls._app is None:
                 cls._app = super().__new__(cls)
-                cls._app._is_initialized = False
+                cls._app._data_io_butler = DataIOButler()  # Initialization moved here
             return cls._app
-
-    def __init__(self):
-        if not self._is_initialized:
-            self._data_io_butler = DataIOButler()
 
     @staticmethod
     def compute_and_store_daily_return(stock_id: str, start_date: str, end_date: str) -> None:

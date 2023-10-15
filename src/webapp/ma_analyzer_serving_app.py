@@ -6,22 +6,16 @@ from core.analyzer.moving_average_analyzer import MovingAverageAnalyzer
 class MovingAverageAnalyzerApp:
     _app = None
     _app_lock = threading.Lock()
-    _is_initialized = None
 
     def __new__(cls, *args, **kwargs):
         with cls._app_lock:
             if cls._app is None:
                 cls._app = super().__new__(cls)
-                cls._app._is_initialized = False
+                cls._app._data_io_butler = DataIOButler()  # Initialization moved here
             return cls._app
 
-    def __init__(self):
-        if not self._is_initialized:
-            self._data_io_butler = DataIOButler()
-
     @staticmethod
-    def compute_and_store_moving_average(stock_id: str, start_date: str, end_date: str,
-                                         window_sizes: list[int]) -> None:
+    def compute_and_store_moving_average(stock_id: str, start_date: str, end_date: str, window_sizes: list[int]) -> None:
         """
         Computes the moving averages and updates the Redis store.
 
@@ -31,7 +25,6 @@ class MovingAverageAnalyzerApp:
         :param window_sizes: List of window sizes for moving average calculation.
         :return: None
         """
-
         ma_analyzer = MovingAverageAnalyzer()
         ma_analyzer.calculate_moving_average(
             stock_id=stock_id,
@@ -44,3 +37,5 @@ class MovingAverageAnalyzerApp:
 def get_app():
     app = MovingAverageAnalyzerApp()
     return app
+
+
