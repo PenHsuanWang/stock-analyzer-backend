@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from webapp import data_fetcher_serving_app_router, ma_analyzer_serving_app_router, daily_return_serving_app_router
+from webapp import data_fetcher_serving_app_router, ma_analyzer_serving_app_router, daily_return_serving_app_router, cross_asset_serving_app_router, data_manager_serving_app_router
 
 
 
@@ -17,6 +17,8 @@ app = FastAPI()
 app.include_router(data_fetcher_serving_app_router.router)
 app.include_router(ma_analyzer_serving_app_router.router)
 app.include_router(daily_return_serving_app_router.router)
+app.include_router(cross_asset_serving_app_router.router)
+app.include_router(data_manager_serving_app_router.router)
 
 
 app.add_middleware(

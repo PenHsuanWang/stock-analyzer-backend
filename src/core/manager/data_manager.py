@@ -95,15 +95,25 @@ class DataIOButler:
 
     # Add any additional data management methods as needed.
 
+    def get_all_exist_data_key(self) -> list:
+        """
+        return keys of the exist dataset
+        :return: list(keys)
+        """
+        return self._redis_client.keys(pattern="stock_data:*")
+
 
 if __name__ == "__main__":
     data_io_butler = DataIOButler()
 
     # List all keys in Redis matching the pattern 'stock_data:*'
-    keys = data_io_butler._redis_client.keys(pattern="stock_data:*")
+    keys = data_io_butler.get_all_exist_data_key()
     if not keys:
         print("No stock data keys found in Redis.")
         exit()
+
+    for key in keys:
+        print(key.decode('utf-8'))
 
     # Just fetching data for the first key as an example
     key = keys[0].decode('utf-8')  # Convert bytes to string
@@ -111,6 +121,7 @@ if __name__ == "__main__":
 
     # Extract stock_id, start_date, and end_date from the key
     _, stock_id, start_date, end_date = key.split(":")  # Assumes the key format is consistent
+
 
     def fetch_and_print():
         try:
@@ -120,4 +131,17 @@ if __name__ == "__main__":
         except DataNotFoundError as e:
             print(str(e))
 
+
     fetch_and_print()
+
+    keys = data_io_butler.get_all_exist_data_key()
+    print(keys)
+
+    data_io_butler.delete_data(
+        stock_id="AAPL",
+        start_date="2023-01-01",
+        end_date="2023-10-10"
+    )
+
+    keys = data_io_butler.get_all_exist_data_key()
+    print(keys)

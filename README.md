@@ -6,53 +6,78 @@ The Python backend server of this project is engineered to serve frontend reques
 
 ---
 
-### Core Package
+## Modular Introduction
 
-**Purpose**:  
-The `core` package primarily focuses on the internal logic and services required to maintain and manage our data storage, manipulation, and retrieval operations.
+### 1. Core
 
-**Components & Responsibilities**:  
+The `core` module is the heart of the project, focusing on all logic and calculations directly related to the `stockana` package. It mainly encompasses core operations of stock analysis, such as calculating the moving average. This module also ensures data flows efficiently and smoothly during the analysis process, utilizing management tools like `data_manager` to facilitate data storage and handling.
 
-- **Service Manager**: Takes care of initiating, stopping, or restarting various services within our system, such as Redis connections or background data-fetching tasks.
-  
-- **Data Processor**: This module handles all internal data manipulations, such as filtering, sorting, or transforming the raw data obtained from external sources.
-  
-- **Cache Handler**: Interfaces with the Redis instance to set, get, or delete cached data items.
+#### Implementation Example Explanation:
+- `moving_average_analyzer.py` defines the `MovingAverageAnalyzer` class, primarily designed to fetch stock data from Redis, compute its moving average, and update such data in Redis. Additionally, this file offers a straightforward example showcasing how to employ this class to calculate the moving average of a specific stock.
+
+### 2. Utils
+
+The `utils` module provides a collection of auxiliary tools, focusing on tasks not directly related to stock analysis but vital for overall functionality. These utilities ensure that `core` can smoothly receive and process data without concerning itself with the data's source or format.
+
+#### Implementation Example Explanation:
+- The provided example illustrates that data is fetched from Redis, implying that the `utils` module might have tools assisting in connecting and managing the Redis database access.
+
+### 3. Webapp
+
+The `webapp` module serves as a bridge, transforming functionalities and logic in `core` into a Web API accessible directly by end-users. Using the FastAPI framework, `webapp` offers a set of applications and defines corresponding routes, allowing users to access and utilize stock analysis functions via specific URL endpoints.
+
+#### Implementation Example Explanation:
+- `ma_analyzer_serving_app.py` defines the `MovingAverageAnalyzerApp` singleton class, aiming to encapsulate the functionalities of `MovingAverageAnalyzer` for webapp use. It provides a static method `compute_and_store_moving_average` to compute the moving average.
+- `ma_analyzer_serving_app_router.py` is a route definition file for FastAPI, establishing an endpoint `/stock_data/compute_and_store_moving_average`. When invoked, this endpoint computes the moving average and updates the Redis database.
+
+## Application Introduction
+
+The project structure distinctly separates computational and backend services, ensuring that each module has a specific focus and excels in its functionality.
+
+### Computational Aspects (`core/analyzer`):
+
+1. **Moving Average Calculation (`moving_average_analyzer.py`):** This module provides the functionality to calculate the moving average for stocks or other assets. The moving average is a technical indicator commonly used in stock market analysis that aids investors in understanding price trends and market dynamics better.
+
+2. **Daily Return Calculation (`daily_return_analyzer.py`):** The primary function of this module is to compute the daily return for stocks or other assets. This is a crucial metric for investors evaluating asset performance and risk.
+
+3. **Cross-Asset Correlation Analysis (`cross_asset_analyzer.py`):** The function of this module is to analyze the price correlation between two or more assets. Cross-asset analysis can help investors determine the risk diversification strategy of an asset portfolio and identify potential arbitrage opportunities.
+
+### Backend Serving:
+
+1. **Data Access Management (`core/manager/data_manager.py` and `webapp/data_manager_serving_app.py`):** The `data_manager.py` under `core` is responsible for data flow and access, ensuring that data can be smoothly extracted from external sources, stored, and correctly transferred between internal modules. Correspondingly, `data_manager_serving_app.py` under `webapp` acts as the Web API version of this module, allowing external services or frontend interfaces to interact directly with the data management module.
+
 
 ---
 
-### Utils Package
+The three main modules collaborate to form a comprehensive stock analysis system, from data sourcing, core analysis, to Web API provision, ensuring users receive precise and timely analysis results. Not only do these modules ensure data accuracy and reliability, but they also offer a user-friendly web interface, allowing end-users easy access to analysis functionalities.
 
-**Purpose**:  
-`utils` package contains helper modules that serve various utility functions required throughout the project.
+## Example
 
-**Components & Responsibilities**:  
+In this example, we'll delve into using the previously introduced `core` and `webapp` modules to implement the moving average analysis functionality.
 
-- **data_io**: As the main bridge to external data sources, `data_io` handles:
-  - Data extraction from Yahoo Finance.
-  - Data serialization and deserialization for efficient storage and retrieval.
-  - Error-handling for external API issues or rate limiting.
+### `core` - MovingAverageAnalyzer
 
----
+Within the `core` module, `MovingAverageAnalyzer` is tasked with calculating the moving average. It initially fetches stock data from the Redis database, then employs the `stockana` package to compute the moving average, updating the database subsequently.
 
-### Webapp Package
+The principal function of this class is `calculate_moving_average`, requiring the following parameters:
 
-**Purpose**:  
-The `webapp` package is where all the pieces come together in a user-friendly interface. It provides users with tools to fetch, visualize, and analyze financial data without diving into the internal mechanics.
+- `stock_id`: Stock code.
+- `start_date` and `end_date`: Starting and ending dates of the data.
+- `window_sizes`: List of window sizes for the moving average to be computed.
 
-**Components & Responsibilities**:  
+Additionally, this class guarantees thread safety in Redis operations using `threading.Lock()`.
 
-- **API Endpoints**: RESTful endpoints that the frontend interacts with to request or post data.
-  
-- **Frontend Interface**: A sleek user interface that lets users choose stocks, view charts, and access stored data.
-  
-- **Workflow Orchestrator**: This module coordinates the sequence of tasks from fetching data from Yahoo Finance, processing it in `core`, storing it in Redis, and then serving it to the frontend.
+### `webapp` - MovingAverageAnalyzerApp and Router
 
----
+The `webapp` module offers the `MovingAverageAnalyzerApp` singleton class, encapsulating and providing the Web API functionalities for moving average analysis. The `compute_and_store_moving_average` function allows this app to invoke the core module's `MovingAverageAnalyzer` for computation and storage of moving averages.
 
-## Getting Started
+Lastly, we define `ma_analyzer_serving_app_router.py`. This routing file, utilizing the FastAPI framework, sets up an endpoint `/stock_data/compute_and_store_moving_average`, enabling users to send POST requests with parameters like stock code, dates, and window sizes, and returns the computed results.
 
-To begin working with the Financial Data Integration System, ensure you have the prerequisites installed (e.g., Python, Redis) and follow the setup guidelines provided in each package's individual README.md file.
+When users send a request to this API endpoint, the request is processed through the `MovingAverageAnalyzerApp`'s `compute_and_store_moving_average` function, thus achieving the objective of computing the moving average and updating the Redis database.
+
+### Conclusion
+
+This example demonstrates the amalgamation of `core` and `webapp` modules to offer a complete moving average computation functionality. It aptly separates the core computational logic from the Web API, rendering the overall design both clear and scalable.
 
 ---
 
@@ -61,5 +86,3 @@ To begin working with the Financial Data Integration System, ensure you have the
 Always ensure that you're familiar with the purpose and responsibilities of each package before diving in. Modularity has been emphasized to ensure that each section of the codebase can be understood, maintained, and tested independently.
 
 ---
-
-Remember, the above is a basic example and might need modifications based on the exact specifics of your project, such as system dependencies, contributors, or additional modules. Always tailor documentation to fit your project's unique requirements and characteristics.
