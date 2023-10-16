@@ -20,23 +20,15 @@ class CrossAssetAnalyzer:
     def __init__(self):
         self.data_io_butler = DataIOButler()
 
-    def calculate_close_price_correlation(self, stock_ids: list[str], start_date: str, end_date: str) -> pd.DataFrame:
+    def calculate_correlation(self, stock_ids: list[str], start_date: str, end_date: str, metric: str) -> pd.DataFrame:
         """
-        Extract data from Redis for multiple stocks and calculate their correlation based on close price.
+        Extract data from Redis for multiple stocks and calculate their correlation based on the provided metric.
 
         :param stock_ids: List of Stock IDs from yfinance.
+        :param metric: The column based on which the correlation should be calculated (e.g., 'Close', 'Daily_Return').
         :return: DataFrame of correlations
         """
-        return self._calculate_correlation_based_on_column(stock_ids, start_date, end_date, 'Close')
-
-    def calculate_daily_return_correlation(self, stock_ids: list[str], start_date: str, end_date: str) -> pd.DataFrame:
-        """
-        Extract data from Redis for multiple stocks and calculate their correlation based on daily return.
-
-        :param stock_ids: List of Stock IDs from yfinance.
-        :return: DataFrame of correlations
-        """
-        return self._calculate_correlation_based_on_column(stock_ids, start_date, end_date, 'Daily_Return')
+        return self._calculate_correlation_based_on_column(stock_ids, start_date, end_date, metric)
 
     def _calculate_correlation_based_on_column(self, stock_ids: list[str], start_date: str, end_date: str, column: str) -> pd.DataFrame:
         """
@@ -53,7 +45,9 @@ class CrossAssetAnalyzer:
             try:
                 # Extract stock data from Redis
                 stock_data = self.data_io_butler.get_data(stock_id, start_date, end_date)
-                series_list.append(stock_data[column])
+                stock_series = stock_data[column]
+                stock_series.name = stock_id  # Set the name of the Series to the stock ID
+                series_list.append(stock_series)
 
             except DataNotFoundError:
                 print(f"No data found for stock ID {stock_id} from {start_date} to {end_date} in Redis.")
