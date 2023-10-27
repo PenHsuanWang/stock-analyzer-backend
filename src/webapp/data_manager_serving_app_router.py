@@ -25,15 +25,8 @@ class UpdateDataRequest(BaseModel):
 def get_stock_data(request: GetDataRequest = Body(...), app: DataManagerApp = Depends(get_app)):
     try:
         data = app.get_stock_data(request.stock_id, request.start_date, request.end_date)
+        data = data.round(decimals=3)
         return {"data": data.to_dict(orient="records")}
-        # sample_data = {
-        #     "stock_id": "sample_id",
-        #     "start_date": "2021-10-20",
-        #     "end_date": "2022-10-20"
-        # }
-        # request_obj = GetDataRequest(**sample_data)
-        # print(request_obj)
-        # return {"data": {"key", "value"}}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

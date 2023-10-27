@@ -5,7 +5,8 @@ This includes operations like checking data, getting data, and deleting data.
 
 import redis
 import pandas as pd
-import asyncio  # import asyncio
+import numpy as np
+from io import StringIO
 
 
 class DataNotFoundError(Exception):
@@ -66,7 +67,17 @@ class DataIOButler:
             raise DataNotFoundError("No data found for the given stock parameters in Redis.")
 
         data_json_str = data_json_bytes.decode('utf-8')  # decode bytes to string
-        return pd.read_json(data_json_str, orient="records")
+
+        df = pd.read_json(StringIO(data_json_str), orient="records")
+
+        # Check for infinity or NaN values and replace them
+        if df.select_dtypes(include=[np.number]).applymap(np.isinf).any().any():
+            df = df.replace([np.inf, -np.inf], np.nan)
+
+        if df.isnull().any().any():
+            df = df.fillna(0)  # or any other value you see fit, or drop them with `dropna()`
+
+        return df
 
     def update_data(self, stock_id: str, start_date: str, end_date: str, updated_dataframe: pd.DataFrame) -> None:
         """
