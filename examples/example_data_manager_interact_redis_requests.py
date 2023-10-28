@@ -4,6 +4,14 @@ import json
 
 BASE_URL = "http://localhost:8000"  # Assuming FastAPI server is running on localhost and port 8000
 
+
+def get_all_data_keys():
+    endpoint = "/stock_data/get_all_keys"
+    response = requests.get(f"{BASE_URL}{endpoint}")
+    data = response.json()
+    return data.get("keys", [])
+
+
 def check_data_exists(stock_id: str, start_date: str, end_date: str) -> bool:
     endpoint = "/stock_data/check_data_exists"
     response = requests.post(
@@ -62,6 +70,11 @@ if __name__ == "__main__":
     stock_id = "TSM"
     start_date = "2023-01-01"
     end_date = "2023-10-10"
+
+    # Fetch all data keys from the server
+    all_keys = get_all_data_keys()
+    print(f"Available data keys in the server: {all_keys}")
+
 
     # Check if data exists
     print(f"Data exists for {stock_id} from {start_date} to {end_date}: {check_data_exists(stock_id, start_date, end_date)}")

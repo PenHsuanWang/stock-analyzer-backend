@@ -21,6 +21,15 @@ class UpdateDataRequest(BaseModel):
     updated_dataframe: dict  # a dict representation of the dataframe
 
 
+@router.get("/stock_data/get_all_keys")
+def get_all_data_keys(app: DataManagerApp = Depends(get_app)):
+    try:
+        keys = app.get_all_data_keys()
+        return {"keys": keys}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/stock_data/get_data")
 def get_stock_data(request: GetDataRequest = Body(...), app: DataManagerApp = Depends(get_app)):
     try:

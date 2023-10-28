@@ -19,6 +19,10 @@ class DataManagerApp:
             return cls._app
 
     @staticmethod
+    def get_all_data_keys() -> list:
+        return [key.decode('utf-8') for key in DataManagerApp()._data_io_butler.get_all_exist_data_key()]
+
+    @staticmethod
     def get_stock_data(stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
         return DataManagerApp()._data_io_butler.get_data(stock_id, start_date, end_date)
 
