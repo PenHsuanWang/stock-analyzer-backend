@@ -1,6 +1,9 @@
 # webapp.data_manager_serving_app.py
 
 import threading
+
+import pandas as pd
+
 from core.manager.data_manager import DataIOButler
 
 
@@ -16,7 +19,7 @@ class DataManagerApp:
             return cls._app
 
     @staticmethod
-    def get_stock_data(stock_id: str, start_date: str, end_date: str):
+    def get_stock_data(stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
         return DataManagerApp()._data_io_butler.get_data(stock_id, start_date, end_date)
 
     @staticmethod
@@ -24,8 +27,13 @@ class DataManagerApp:
         return DataManagerApp()._data_io_butler.check_data_exists(stock_id, start_date, end_date)
 
     @staticmethod
-    def update_stock_data(stock_id: str, start_date: str, end_date: str, updated_dataframe):
-        DataManagerApp()._data_io_butler.update_data(stock_id, start_date, end_date, updated_dataframe)
+    def update_stock_data(stock_id: str, start_date: str, end_date: str, updated_dataframe: pd.DataFrame) -> bool:
+        try:
+            DataManagerApp()._data_io_butler.update_data(stock_id, start_date, end_date, updated_dataframe)
+            return True
+        except Exception as e:
+            print(e)
+            return False
 
     @staticmethod
     def delete_stock_data(stock_id: str, start_date: str, end_date: str) -> bool:

@@ -1,3 +1,4 @@
+import pandas as pd
 import requests
 import json
 
@@ -26,9 +27,8 @@ def get_stock_data(stock_id: str, start_date: str, end_date: str):
             "end_date": end_date
         }
     )
-    print(response.text)
-    data = response.json()
-    return data.get("stock_data")
+    data = response.json().get("data")
+    return data
 
 def update_stock_data(stock_id: str, start_date: str, end_date: str, updated_dataframe: dict) -> bool:
     endpoint = "/stock_data/update_data"
@@ -67,13 +67,13 @@ if __name__ == "__main__":
     print(f"Data exists for {stock_id} from {start_date} to {end_date}: {check_data_exists(stock_id, start_date, end_date)}")
     # Get stock data
     stock_data = get_stock_data(stock_id, start_date, end_date)
-    print(stock_data)
+    fetched_df = pd.DataFrame(stock_data)
 
     print("Fetched stock data:")
-    print(json.dumps(stock_data, indent=4))
+    print(fetched_df)
 
     # Update stock data - for the purpose of this example, we'll just send the fetched data back without any changes
-    updated = update_stock_data(stock_id, start_date, end_date, stock_data.to_dict(orient="records"))
+    updated = update_stock_data(stock_id, start_date, end_date, fetched_df.to_dict())
     print(f"Stock data updated: {updated}")
 
     # Delete stock data
