@@ -27,10 +27,10 @@ def fetch_data_and_get_as_dataframe(request: FetchStockDataRequest = Body(...),
 
     try:
         dataframe = app.fetch_data_and_get_as_dataframe(request.stock_id, request.start_date, request.end_date)
-    except RuntimeError:
+    except RuntimeError as re:
         return JSONResponse(
             status_code=500,
-            content={"message": "An error occurred while fetching the stock data. Please check the input parameters."}
+            content={"message": f"An error occurred: {str(re)}. Please check the input parameters."}
         )
 
     # Convert DataFrame to JSON for response.
