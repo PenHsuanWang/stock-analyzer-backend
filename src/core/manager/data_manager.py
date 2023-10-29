@@ -28,51 +28,55 @@ class DataIOButler:
         )
 
     @staticmethod
-    def _generate_key(stock_id: str, start_date: str, end_date: str) -> str:
+    def _generate_key(prefix: str, stock_id: str, start_date: str, end_date: str) -> str:
         """
         Generate a consistent Redis key based on stock information.
 
+        :param prefix: the tag to distinguish the data stage
         :param stock_id: ID of the stock.
         :param start_date: Start date for the stock data.
         :param end_date: End date for the stock data.
         :return: Generated key string.
         """
-        return f"stock_data:{stock_id}:{start_date}:{end_date}"
+        return f"{prefix}:{stock_id}:{start_date}:{end_date}"
 
-    def stash_data(self, stock_id: str, start_date: str, end_date: str, data: pd.DataFrame) -> None:
+    def save_data(self, prefix: str, stock_id: str, start_date: str, end_date: str, data: pd.DataFrame) -> None:
         """
         Stash the given stock data in Redis.
 
+        :param prefix:
         :param stock_id: Stock ID from yfinance.
         :param start_date: Start date for the stock data.
         :param end_date: End date for the stock data.
         :param data: The dataframe containing the stock data.
         """
-        key = self._generate_key(stock_id, start_date, end_date)
+        key = self._generate_key(prefix, stock_id, start_date, end_date)
         self._redis_client.set(key, data.to_json(orient="records"))
 
-    def check_data_exists(self, stock_id: str, start_date: str, end_date: str) -> bool:
+    def check_data_exists(self, prefix: str, stock_id: str, start_date: str, end_date: str) -> bool:
         """
         Check if data for the given stock parameters exists in Redis.
 
+        :param prefix:
         :param stock_id: ID of the stock.
         :param start_date: Start date for the stock data.
         :param end_date: End date for the stock data.
         :return: True if data exists, else False.
         """
-        key = self._generate_key(stock_id, start_date, end_date)
+        key = self._generate_key(prefix, stock_id, start_date, end_date)
         return bool(self._redis_client.exists(key))
 
-    def get_data(self, stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
+    def get_data(self, prefix: str, stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
         """
         Retrieve stored stock data from Redis as a DataFrame.
 
+        :param prefix:
         :param stock_id: ID of the stock.
         :param start_date: Start date for the stock data.
         :param end_date: End date for the stock data.
         :return: Stock data as a DataFrame.
         """
-        key = self._generate_key(stock_id, start_date, end_date)
+        key = self._generate_key(prefix, stock_id, start_date, end_date)
         data_json_bytes = self._redis_client.get(key)
 
         if data_json_bytes is None:
@@ -91,39 +95,51 @@ class DataIOButler:
 
         return df
 
-    def update_data(self, stock_id: str, start_date: str, end_date: str, updated_dataframe: pd.DataFrame) -> None:
+    def update_data(self, prefix: str, stock_id: str, start_date: str, end_date: str, updated_dataframe: pd.DataFrame) -> None:
         """
         Update the stored stock data in Redis.
 
+        :param prefix:
         :param stock_id: Stock ID from yfinance.
         :param start_date: Start date for the stock data.
         :param end_date: End date for the stock data.
         :param updated_dataframe: The updated dataframe.
         """
-        key = self._generate_key(stock_id, start_date, end_date)
+        key = self._generate_key(prefix, stock_id, start_date, end_date)
         # Convert DataFrame to JSON and store it in Redis
         self._redis_client.set(key, updated_dataframe.to_json(orient="records"))
 
-    def delete_data(self, stock_id: str, start_date: str, end_date: str) -> bool:
+    def delete_data(self, prefix: str, stock_id: str, start_date: str, end_date: str) -> bool:
         """
         Delete stored stock data for the given parameters from Redis.
 
+        :param prefix:
         :param stock_id: ID of the stock.
         :param start_date: Start date for the stock data.
         :param end_date: End date for the stock data.
         :return: True if deletion was successful, else False.
         """
-        key = self._generate_key(stock_id, start_date, end_date)
+        key = self._generate_key(prefix, stock_id, start_date, end_date)
         return bool(self._redis_client.delete(key))
 
     # Add any additional data management methods as needed.
 
-    def get_all_exist_data_key(self) -> list:
+    def get_all_exist_data_key(self, prefix: str = None) -> list:
         """
-        return keys of the exist dataset
+        Return keys of the exist dataset with the given prefix.
+        If no prefix is provided, it returns keys without a prefix.
+
+        :param prefix: The prefix to filter keys by.
         :return: list(keys)
         """
-        return self._redis_client.keys(pattern="stock_data:*")
+        if prefix is not None:
+            if not prefix.strip():
+                raise ValueError("Prefix cannot be empty or whitespace.")
+            pattern = f"{prefix}:*"
+        else:
+            pattern = "*"
+
+        return self._redis_client.keys(pattern=pattern)
 
 
 if __name__ == "__main__":

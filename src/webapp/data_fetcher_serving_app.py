@@ -47,13 +47,16 @@ class StockDataFetcherApp:
         the purpose of analysis stock price EDA. the fetch raw data need to be stashed and wait for
         following analysis operation. Put the data into redis storage place.
 
+        due to the stash data in this stage will be mus be raw data which just fetched from yfinance api
+        thus the data prefix will be directly provided `raw_stock_data`
+
         :param stock_id:
         :param start_date:
         :param end_date:
         :return:
         """
         df = self.fetch_data_and_get_as_dataframe(stock_id, start_date, end_date)
-        self.data_io_butler.stash_data(stock_id, start_date, end_date, df)
+        self.data_io_butler.save_data("raw_stock_data", stock_id, start_date, end_date, df)
 
 
 def get_app():
