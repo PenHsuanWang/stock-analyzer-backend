@@ -7,6 +7,7 @@ import redis
 import pandas as pd
 import numpy as np
 from io import StringIO
+from threading import Lock
 
 
 class DataNotFoundError(Exception):
@@ -26,6 +27,7 @@ class DataIOButler:
         self._redis_client = redis.StrictRedis(
             connection_pool=redis.ConnectionPool(host=host, port=port, db=db)
         )
+        self._lock = Lock()
 
     @staticmethod
     def _generate_key(prefix: str, stock_id: str, start_date: str, end_date: str) -> str:
@@ -39,6 +41,27 @@ class DataIOButler:
         :return: Generated key string.
         """
         return f"{prefix}:{stock_id}:{start_date}:{end_date}"
+
+    @staticmethod
+    def _with_retries(max_retries, function, *args, **kwargs):
+        attempts = 0
+        while attempts < max_retries:
+            try:
+                return function(*args, **kwargs)
+            except redis.WatchError:
+                attempts += 1
+                if attempts == max_retries:
+                    raise Exception("Max retries exceeded for operation in Redis")
+
+    @staticmethod
+    def _update_redis_data(pipe, key, data_json):
+        pipe.watch(key)
+        # ... perform your checks or transformations here ...
+
+        # start redis transaction
+        pipe.multi()
+        pipe.set(key, data_json)
+        pipe.execute()
 
     def save_data(self, prefix: str, stock_id: str, start_date: str, end_date: str, data: pd.DataFrame) -> None:
         """
@@ -107,7 +130,12 @@ class DataIOButler:
         """
         key = self._generate_key(prefix, stock_id, start_date, end_date)
         # Convert DataFrame to JSON and store it in Redis
-        self._redis_client.set(key, updated_dataframe.to_json(orient="records"))
+        data_json = updated_dataframe.to_json(orient="records")
+
+        # Start a Redis transaction
+        with self._lock:  # Ensure thread safety with a lock
+            with self._redis_client.pipeline() as pipe:
+                self._with_retries(5, self._update_redis_data, pipe, key, data_json)
 
     def delete_data(self, prefix: str, stock_id: str, start_date: str, end_date: str) -> bool:
         """
