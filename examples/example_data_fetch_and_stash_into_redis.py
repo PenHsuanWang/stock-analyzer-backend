@@ -24,6 +24,7 @@ def stash_stock_data(stock_id: str, start_date: str, end_date: str):
         else:
             print(
                 f"Request for {stock_id} from {start_date} to {end_date} failed with status code {response.status_code}: {response.text}")
+            print(response.json().get("message"))
 
     except requests.RequestException as e:
         print(f"Request failed due to an error: {e}")

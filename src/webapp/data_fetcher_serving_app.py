@@ -1,9 +1,8 @@
 import threading
 
 import pandas as pd
-import redis
 from src.utils.data_io.data_fetcher import YFinanceFetcher
-
+from src.core.manager.data_manager import DataIOButler
 
 class StockDataFetcherApp:
 
@@ -21,7 +20,8 @@ class StockDataFetcherApp:
 
     def __init__(self):
         if not self._is_initialized:
-            self._redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)  # adjust as necessary
+            # self._redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)  # adjust as necessary
+            self.data_io_butler = DataIOButler()
             self._data_fetcher = YFinanceFetcher()
 
     def fetch_data_and_get_as_dataframe(self, stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
@@ -45,17 +45,16 @@ class StockDataFetcherApp:
     def fetch_data_and_stash(self, stock_id: str, start_date: str, end_date: str) -> None:
         """
         the purpose of analysis stock price EDA. the fetch raw data need to be stashed and wait for
-        following analysis operation. Put the data into redis storage place
+        following analysis operation. Put the data into redis storage place.
+
         :param stock_id:
         :param start_date:
         :param end_date:
         :return:
         """
         df = self.fetch_data_and_get_as_dataframe(stock_id, start_date, end_date)
-        key = f"stock_data:{stock_id}:{start_date}:{end_date}"
+        self.data_io_butler.stash_data(stock_id, start_date, end_date, df)
 
-        # Convert DataFrame to JSON and store it in Redis
-        self._redis_client.set(key, df.to_json(orient="records"))
 
 def get_app():
     app = StockDataFetcherApp()

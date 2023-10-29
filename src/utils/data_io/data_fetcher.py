@@ -32,12 +32,12 @@ class YFinanceFetcher(BaseDataFetcher):
         start_date = kwargs["start_date"]
         end_date = kwargs["end_date"]
 
-        # check the stock id is valid or not
-        try:
-            if not yf.Ticker(stock_id).info:
-                raise ValueError(f"Invalid stock id: {stock_id}")
-        except HTTPError:
-            raise ValueError(f"Invalid stock id: {stock_id}")
+        # # check the stock id is valid or not
+        # try:
+        #     if not yf.Ticker(stock_id).info:
+        #         raise ValueError(f"Invalid stock id: {stock_id}")
+        # except HTTPError:
+        #     raise ValueError(f"Invalid stock id: {stock_id}")
 
         # check the date format match to yfinance or not
         if not isinstance(start_date, str) or not isinstance(end_date, str):
