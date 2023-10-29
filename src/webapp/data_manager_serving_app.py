@@ -19,29 +19,29 @@ class DataManagerApp:
             return cls._app
 
     @staticmethod
-    def get_all_data_keys() -> list:
-        return [key.decode('utf-8') for key in DataManagerApp()._data_io_butler.get_all_exist_data_key()]
+    def get_all_data_keys(prefix: str) -> list:
+        return [key.decode('utf-8') for key in DataManagerApp()._data_io_butler.get_all_exist_data_key(prefix=prefix)]
 
     @staticmethod
-    def get_stock_data(stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
-        return DataManagerApp()._data_io_butler.get_data(stock_id, start_date, end_date)
+    def get_stock_data(prefix: str, stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
+        return DataManagerApp()._data_io_butler.get_data(prefix, stock_id, start_date, end_date)
 
     @staticmethod
-    def check_data(stock_id: str, start_date: str, end_date: str) -> bool:
-        return DataManagerApp()._data_io_butler.check_data_exists(stock_id, start_date, end_date)
+    def check_data(prefix: str, stock_id: str, start_date: str, end_date: str) -> bool:
+        return DataManagerApp()._data_io_butler.check_data_exists(prefix, stock_id, start_date, end_date)
 
     @staticmethod
-    def update_stock_data(stock_id: str, start_date: str, end_date: str, updated_dataframe: pd.DataFrame) -> bool:
+    def update_stock_data(prefix: str, stock_id: str, start_date: str, end_date: str, updated_dataframe: pd.DataFrame) -> bool:
         try:
-            DataManagerApp()._data_io_butler.update_data(stock_id, start_date, end_date, updated_dataframe)
+            DataManagerApp()._data_io_butler.update_data(prefix, stock_id, start_date, end_date, updated_dataframe)
             return True
         except Exception as e:
             print(e)
             return False
 
     @staticmethod
-    def delete_stock_data(stock_id: str, start_date: str, end_date: str) -> bool:
-        return DataManagerApp()._data_io_butler.delete_data(stock_id, start_date, end_date)
+    def delete_stock_data(prefix: str, stock_id: str, start_date: str, end_date: str) -> bool:
+        return DataManagerApp()._data_io_butler.delete_data(prefix, stock_id, start_date, end_date)
 
 
 def get_app():
