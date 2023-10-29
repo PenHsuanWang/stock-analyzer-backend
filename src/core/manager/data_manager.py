@@ -39,6 +39,18 @@ class DataIOButler:
         """
         return f"stock_data:{stock_id}:{start_date}:{end_date}"
 
+    def stash_data(self, stock_id: str, start_date: str, end_date: str, data: pd.DataFrame) -> None:
+        """
+        Stash the given stock data in Redis.
+
+        :param stock_id: Stock ID from yfinance.
+        :param start_date: Start date for the stock data.
+        :param end_date: End date for the stock data.
+        :param data: The dataframe containing the stock data.
+        """
+        key = self._generate_key(stock_id, start_date, end_date)
+        self._redis_client.set(key, data.to_json(orient="records"))
+
     def check_data_exists(self, stock_id: str, start_date: str, end_date: str) -> bool:
         """
         Check if data for the given stock parameters exists in Redis.
