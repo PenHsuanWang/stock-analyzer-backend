@@ -2,9 +2,7 @@ from fastapi import APIRouter, Depends, Body
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-import pandas as pd
-
-from webapp.data_fetcher_serving_app import StockDataFetcherApp, get_app
+from webapp.serving_app.data_fetcher_serving_app import StockDataFetcherApp, get_app
 
 router = APIRouter()
 

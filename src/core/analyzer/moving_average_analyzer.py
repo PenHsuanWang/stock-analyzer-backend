@@ -1,6 +1,6 @@
 import logging
 import threading
-import traceback
+import redis.exceptions
 
 
 from stockana import calc_time_based
@@ -18,7 +18,7 @@ class MovingAverageAnalyzer:
         self.data_io_butler = DataIOButler()
         self.redis_lock = threading.Lock()  # Lock for Redis operations
 
-    def calculate_moving_average(self, stock_id: str, start_date: str, end_date: str, window_sizes: list[int]) -> None:
+    def calculate_moving_average(self, prefix: str, stock_id: str, start_date: str, end_date: str, window_sizes: list[int]) -> None:
         """
         Extract the data from Redis and calculate the moving average.
         The moving average data will be added as a new column and the current data in Redis will be updated.
@@ -29,6 +29,7 @@ class MovingAverageAnalyzer:
         Insert the new dataframe with the MA column back to Redis.
         | date | Open | High | Low | Close | Volume | MA_5_days | MA_10_days | ...
 
+        :param prefix:
         :param stock_id: Stock ID from yfinance.
         :param window_sizes: A list of integers representing the desired MA days for calculation.
         :return: None
@@ -40,23 +41,40 @@ class MovingAverageAnalyzer:
 
         try:
             # Extract stock data from Redis
-            stock_data = self.data_io_butler.get_data(stock_id, start_date, end_date)
+            stock_data = self.data_io_butler.get_data(prefix, stock_id, start_date, end_date)
 
             for i in window_sizes:
                 stock_data[f"MA_{i}_days"] = calc_time_based.calculate_moving_average(stock_data["Close"], i)
 
+            # if this stock dataset is not calculated before, save with new key
+            self.data_io_butler.save_data(
+                "analyzed_stock_data",
+                stock_id,
+                start_date,
+                end_date,
+                data=stock_data
+            )
+
             # Update the Redis data with the new dataframe
             with self.redis_lock:  # Ensure thread safety for Redis operations
-                self.data_io_butler.update_data(stock_id, start_date, end_date, stock_data)
+                self.data_io_butler.update_data(
+                    "analyzed_stock_data",
+                    stock_id,
+                    start_date,
+                    end_date,
+                    stock_data
+                )
 
         except DataNotFoundError as de:
             print(de)
             logger.error(f"No data found for stock ID {stock_id} from {start_date} to {end_date} in Redis.")
-            raise
+        except redis.exceptions.RedisError as re:
+            logger.error(f"Redis error occurred: {re}")
+        except (ValueError, TypeError) as e:
+            logger.error(f"Data processing error: {e}")
         except Exception as e:
-            print(e)
-            e.with_traceback()
-            logger.exception(f"An error occurred: {e}")
+            logger.exception(f"An unexpected error occurred: {e}")
+            raise
 
 
 
