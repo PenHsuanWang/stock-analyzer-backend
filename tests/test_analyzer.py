@@ -13,93 +13,66 @@ fake_stock_data = pd.DataFrame({
 
 # Testing MovingAverageAnalyzer
 class TestMovingAverageAnalyzer(TestCase):
+
     def setUp(self):
         self.analyzer = MovingAverageAnalyzer()
-        self.prefix = 'test'
-        self.stock_id = 'AAPL'
-        self.start_date = '2021-01-01'
-        self.end_date = '2021-01-05'
+        self.fake_stock_data = pd.DataFrame({
+            'Close': [100, 102, 101, 103, 102],
+        })
         self.window_sizes = [3]
 
-    @mock.patch('core.manager.data_manager.DataIOButler.get_data')
-    @mock.patch('core.manager.data_manager.DataIOButler.update_data')
-    def test_calculate_moving_average_success(self, mock_update_data, mock_get_data):
-        # Mock returning fake stock data
-        mock_get_data.return_value = fake_stock_data
+    def test_calculate_moving_average_success(self):
         # Perform the calculation
-        self.analyzer.calculate_moving_average(
-            self.prefix, self.stock_id, self.start_date, self.end_date, self.window_sizes
+        result_df = self.analyzer.calculate_moving_average(
+            self.fake_stock_data, self.window_sizes
         )
-        # Verify that the Redis get and update methods have been called
-        mock_get_data.assert_called_with(self.prefix, self.stock_id, self.start_date, self.end_date)
-        # mock_update_data.assert_called()
-
         # Validate the moving average calculation
-        # Here you should also check the contents of the DataFrame to ensure the moving average has been calculated correctly.
+        self.assertIn('MA_3_days', result_df.columns, "MA_3_days column not in DataFrame")
 
-    @mock.patch('core.manager.data_manager.DataIOButler.get_data', side_effect=DataNotFoundError)
-    def test_calculate_moving_average_data_not_found(self, mock_get_data):
-        # Call the method, which is expected to handle DataNotFoundError internally
-        self.analyzer.calculate_moving_average(
-            self.prefix, self.stock_id, self.start_date, self.end_date, self.window_sizes
-        )
+        # Check if the calculation is correct
+        # Add the expected moving average values manually or calculate them as you would expect them to be
+        expected_ma = [None, None, 101.0, 102.0, 102.0]  # Example expected values
+        pd.testing.assert_series_equal(result_df['MA_3_days'], pd.Series(expected_ma, name='MA_3_days'), check_names=False)
 
-        # Instead of checking for an exception, verify the behavior, such as a log message
-        # For example, if you're logging an error when this happens, check that the logger was called
-        # mock_logger.error.assert_called_once_with(expected_message)
-
-        # Verify that the Redis get method was called
-        mock_get_data.assert_called_with(self.prefix, self.stock_id, self.start_date, self.end_date)
-
-    @mock.patch('core.manager.data_manager.DataIOButler.get_data')
-    def test_calculate_moving_average_empty_window_sizes(self, mock_get_data):
+    def test_calculate_moving_average_empty_window_sizes(self):
         # Test the situation where the window_sizes list is empty
-        mock_get_data.return_value = fake_stock_data
-        with mock.patch('core.analyzer.moving_average_analyzer.logger') as mock_logger:
-            self.analyzer.calculate_moving_average(
-                self.prefix, self.stock_id, self.start_date, self.end_date, []
-            )
-            # Assert that a warning was logged
-            mock_logger.warning.assert_called_with("No window sizes provided for moving average calculation.")
-            # Assert that Redis update_data was not called since there's nothing to calculate and update
-            # mock_update_data.assert_not_called()
+        result_df = self.analyzer.calculate_moving_average(
+            self.fake_stock_data, []
+        )
+        # Assert that the DataFrame is unchanged
+        pd.testing.assert_frame_equal(result_df, self.fake_stock_data)
 
 
 # Testing DailyReturnAnalyzer
 class TestDailyReturnAnalyzer(TestCase):
     def setUp(self):
         self.analyzer = DailyReturnAnalyzer()
-        self.prefix = 'test'
-        self.stock_id = 'AAPL'
-        self.start_date = '2021-01-01'
-        self.end_date = '2021-01-05'
+        self.fake_stock_data = pd.DataFrame({
+            'Close': [100, 102, 101, 103, 102],
+        })
 
-    @mock.patch('core.manager.data_manager.DataIOButler.get_data')
-    @mock.patch('core.manager.data_manager.DataIOButler.save_data')
-    def test_calculate_daily_return_success(self, mock_save_data, mock_get_data):
-        # Mock returning fake stock data
-        mock_get_data.return_value = fake_stock_data
-        # Mock Redis operation
-        mock_save_data.return_value = None
-
-        self.analyzer.calculate_daily_return(
-            self.prefix, self.stock_id, self.start_date, self.end_date
-        )
-
-        # Verify that the correct function has been called
-        mock_get_data.assert_called_with(self.prefix, self.stock_id, self.start_date, self.end_date)
-        mock_save_data.assert_called()
+    def test_calculate_daily_return_success(self):
+        # Perform the calculation
+        result_df = self.analyzer.calculate_daily_return(self.fake_stock_data)
 
         # Validate the daily return calculation
-        self.assertTrue('Daily_Return' in fake_stock_data.columns)
+        self.assertIn('Daily_Return', result_df.columns, "Daily_Return column not in DataFrame")
 
-    @mock.patch('core.manager.data_manager.DataIOButler.get_data', side_effect=DataNotFoundError)
-    def test_calculate_daily_return_data_not_found(self, mock_get_data):
-        # Test the situation where no data is found in Redis
-        with self.assertRaises(DataNotFoundError):
-            self.analyzer.calculate_daily_return(
-                self.prefix, self.stock_id, self.start_date, self.end_date
-            )
+        # Check if the calculation is correct
+        # The first value should be 0.0 because this is the current behavior of the calculate_daily_return function
+        expected_daily_return = [0.0, 0.02, -0.009803921568627416, 0.01980198019801982, -0.009708737864077666]
+        # Ensure that the expected series is of dtype float64
+        expected_series = pd.Series(expected_daily_return, name='Daily_Return', dtype='float64')
+        pd.testing.assert_series_equal(result_df['Daily_Return'], expected_series, check_names=False)
+
+    def test_calculate_daily_return_empty_data(self):
+        # Test the situation where the data is empty
+        empty_data = pd.DataFrame({'Close': []})
+        result_df = self.analyzer.calculate_daily_return(empty_data)
+
+        # Assert that the DataFrame is still empty and has a new 'Daily_Return' column
+        self.assertTrue(result_df.empty)
+        self.assertIn('Daily_Return', result_df.columns, "Daily_Return column should be present even in empty DataFrame")
 
 
 # Mocked stock data
