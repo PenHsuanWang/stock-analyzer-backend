@@ -38,4 +38,4 @@ if __name__ == "__main__":
     # usage python example_data_fetch_and_stash_into_redis.py TSM 2023-01-01 2023-10-10
     # stash_stock_data(sys.argv[1], sys.argv[2], sys.argv[3])
 
-    stash_stock_data("TSM", "2023-01-01", "2023-10-10")
+    stash_stock_data("GOOGL", "2022-01-01", "2022-10-10")
