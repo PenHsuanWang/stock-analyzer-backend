@@ -55,6 +55,10 @@ class CrossAssetAnalyzer:
             except Exception as e:
                 print(f"An error occurred: {e}")
 
+        # Check if series_list is empty before attempting to calculate correlation
+        if not series_list:
+            return pd.DataFrame()  # Return an empty DataFrame
+
         # Calculate correlation
         correlation_df = calc_cross_asset.calculate_correlation(series_list)
         return correlation_df
