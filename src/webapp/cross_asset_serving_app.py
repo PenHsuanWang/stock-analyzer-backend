@@ -1,42 +1,42 @@
+# src/webapp/cross_asset_serving_app.py
+
 import threading
 import pandas as pd
-from core.manager.data_manager import DataIOButler
 from core.analyzer.cross_asset_analyzer import CrossAssetAnalyzer
+from core.manager.data_manager import DataIOButler, DataNotFoundError
 
 
 class CrossAssetApp:
-    _app = None
+    _app_instance = None
     _app_lock = threading.Lock()
-    _is_initialized = None
 
     def __new__(cls, *args, **kwargs):
         with cls._app_lock:
-            if cls._app is None:
-                cls._app = super().__new__(cls)
-                cls._app._is_initialized = False
-            return cls._app
-
-    def __init__(self):
-        if not self._is_initialized:
-            self._data_io_butler = DataIOButler()
+            if cls._app_instance is None:
+                cls._app_instance = super().__new__(cls)
+            return cls._app_instance
 
     @staticmethod
     def compute_assets_correlation(stock_ids: list[str], start_date: str, end_date: str, metric: str) -> pd.DataFrame:
-        """
-        Computes the correlation among different assets based on the provided metric and returns the result.
+        data_io_butler = DataIOButler()
+        series_list = []
 
-        :param stock_ids: List of stock IDs.
-        :param start_date: Start date for the stock data.
-        :param end_date: End date for the stock data.
-        :param metric: The column based on which the correlation should be calculated.
-        :return: DataFrame of correlations
-        """
+        for stock_id in stock_ids:
+            try:
+                stock_data = data_io_butler.get_data("analyzed_stock_data", stock_id, start_date, end_date)
+                stock_series = stock_data[metric]
+                stock_series.name = stock_id
+                series_list.append(stock_series)
+            except DataNotFoundError:
+                print(f"No data found for stock ID {stock_id} from {start_date} to {end_date}.")
+                continue
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
         cross_asset_analyzer = CrossAssetAnalyzer()
-        correlation_df = cross_asset_analyzer.calculate_correlation(stock_ids, start_date, end_date, metric)
+        correlation_df = cross_asset_analyzer.calculate_correlation(series_list)
         return correlation_df
 
 
 def get_app():
-    app = CrossAssetApp()
-    return app
+    return CrossAssetApp()

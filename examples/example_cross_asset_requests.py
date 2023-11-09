@@ -2,7 +2,7 @@ import requests
 
 def request_asset_correlation(stock_ids: list[str], start_date: str, end_date: str, metric: str):
     # Define the API endpoint for asset correlation computation
-    url = "http://localhost:8000/stock_data/compute_assets_correlation"
+    url = "http://localhost:8000/stock_data/calculate_correlation"
 
     # Define the payload with stock details
     data = {
