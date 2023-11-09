@@ -44,7 +44,7 @@ class CrossAssetAnalyzer:
         for stock_id in stock_ids:
             try:
                 # Extract stock data from Redis
-                stock_data = self.data_io_butler.get_data(stock_id, start_date, end_date)
+                stock_data = self.data_io_butler.get_data("analyzed_stock_data", stock_id, start_date, end_date)
                 stock_series = stock_data[column]
                 stock_series.name = stock_id  # Set the name of the Series to the stock ID
                 series_list.append(stock_series)
