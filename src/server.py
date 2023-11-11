@@ -3,8 +3,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from webapp import ma_analyzer_serving_app_router, daily_return_serving_app_router, cross_asset_serving_app_router, data_manager_serving_app_router
-from webapp.router import data_fetcher_serving_app_router
+from webapp import ma_analyzer_serving_app_router, daily_return_serving_app_router, cross_asset_serving_app_router
+from webapp.router import data_fetcher_serving_app_router, data_manager_serving_app_router
 from webapp.router import stock_analysis_serving_app_router
 
 origins = [

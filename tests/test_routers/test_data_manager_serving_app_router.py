@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 from unittest.mock import patch
-from src.webapp.data_manager_serving_app_router import router
+from webapp.router.data_manager_serving_app_router import router
 from core.manager.data_manager import DataIOButler
 import pandas as pd
 
