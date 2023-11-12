@@ -113,8 +113,9 @@ class DataIOButler:
         if df.select_dtypes(include=[np.number]).applymap(np.isinf).any().any():
             df = df.replace([np.inf, -np.inf], np.nan)
 
-        if df.isnull().any().any():
-            df = df.fillna(0)  # or any other value you see fit, or drop them with `dropna()`
+        # df = df.where(pd.notna(df), None)
+        # if df.isnull().any().any():
+        #     df = df.fillna(0)  # or any other value you see fit, or drop them with `dropna()`
 
         return df
 
