@@ -8,6 +8,46 @@ The Python backend server of this project is engineered to serve frontend reques
 
 ## Modular Introduction
 
+project structure
+```text
+.
+├── __init__.py
+├── core
+│   ├── __init__.py
+│   ├── analyzer
+│   │   ├── __init__.py
+│   │   ├── cross_asset_analyzer.py
+│   │   ├── daily_return_analyzer.py
+│   │   └── moving_average_analyzer.py
+│   └── manager
+│       ├── __init__.py
+│       └── data_manager.py
+├── main.py
+├── run_server.py
+├── server.py
+├── utils
+│   ├── __init__.py
+│   ├── data_io
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   └── data_fetcher.py
+│   └── store
+│       ├── __init__.py
+│       └── companies.py
+└── webapp
+    ├── __init__.py
+    ├── router
+    │   ├── __init__.py
+    │   ├── data_fetcher_serving_app_router.py
+    │   ├── data_manager_serving_app_router.py
+    │   └── stock_analysis_serving_app_router.py
+    └── serving_app
+        ├── __init__.py
+        ├── data_fetcher_serving_app.py
+        ├── data_manager_serving_app.py
+        └── stock_analysis_serving_app.py
+```
+
 ### 1. Core
 
 The `core` module is the heart of the project, focusing on all logic and calculations directly related to the `stockana` package. It mainly encompasses core operations of stock analysis, such as calculating the moving average. This module also ensures data flows efficiently and smoothly during the analysis process, utilizing management tools like `data_manager` to facilitate data storage and handling.
