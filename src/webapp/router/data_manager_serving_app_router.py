@@ -42,6 +42,8 @@ def get_stock_data(request: GetDataRequest = Body(...), app: DataManagerApp = De
         # app.get_stock_data will return a pandas dataframe
         data = app.get_stock_data(request.prefix, request.stock_id, request.start_date, request.end_date)
         data = data.round(decimals=4)
+        data = data.fillna('null')
+
         return {"data": data.to_dict(orient="records")}
 
     except Exception as e:
