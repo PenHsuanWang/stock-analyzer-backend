@@ -22,6 +22,12 @@ class ComputeCorrelationRequest(BaseModel):
     metric: str
 
 
+class ComputeCandlestickPatternsRequest(BaseModel):
+    stock_ids: list[str]
+    start_date: str
+    end_date: str
+
+
 # Define a dependency that will provide an instance of StockAnalysisServingApp
 def get_serving_app_dependency():
     return get_stock_analysis_serving_app()
@@ -79,3 +85,33 @@ def calculate_correlation(
                 "message": f"An error occurred while computing asset correlations. Error details: {str(e)}"
             }
         )
+
+
+@router.post("/stock_data/analyze_candlestick_patterns")
+def analyze_candlestick_patterns(
+        request: ComputeCandlestickPatternsRequest = Body(...),
+        app: StockAnalysisServingApp = Depends(get_serving_app_dependency)
+):
+    """
+    Endpoint to analyze candlestick patterns in stock data for a given stock ID and date range.
+
+    :param request: Request body with stock ID, start date, and end date.
+    :param app: Instance of StockAnalysisServingApp provided by Depends.
+    :return: JSON response with analyzed candlestick patterns.
+    """
+    try:
+        # Assuming the request will have a single stock ID
+        stock_id = request.stock_ids[0] if request.stock_ids else None
+        if not stock_id:
+            raise HTTPException(status_code=400, detail="Stock ID is required.")
+
+        patterns_df = app.analyze_candlestick_patterns(stock_id=stock_id,
+                                                       start_date=request.start_date,
+                                                       end_date=request.end_date)
+        return patterns_df.to_dict()
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
