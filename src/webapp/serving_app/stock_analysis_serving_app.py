@@ -14,6 +14,8 @@ from fastapi import HTTPException
 from core.analyzer.moving_average_analyzer import MovingAverageAnalyzer
 from core.analyzer.daily_return_analyzer import DailyReturnAnalyzer
 from core.analyzer.cross_asset_analyzer import CrossAssetAnalyzer
+from core.analyzer.candlestick_pattern_analyzer import CandlestickPatternAnalyzer  # 新導入
+
 from core.manager.data_manager import DataIOButler, DataNotFoundError
 
 logger = logging.getLogger()
@@ -31,6 +33,7 @@ class StockAnalysisServingApp:
                 cls._app_instance._ma_analyzer = MovingAverageAnalyzer()
                 cls._daily_return_analyzer = DailyReturnAnalyzer()
                 cls._app_instance._cross_asset_analyzer = CrossAssetAnalyzer()
+                cls._app_instance._candlestick_pattern_analyzer = CandlestickPatternAnalyzer()
             return cls._app_instance
 
     def calculating_ma_and_daily_return_and_saved_as_analyzed_prefix(
@@ -103,6 +106,46 @@ class StockAnalysisServingApp:
         cross_asset_analyzer = CrossAssetAnalyzer()
         correlation_df = cross_asset_analyzer.calculate_correlation(series_list)
         return correlation_df
+
+    def analyze_candlestick_patterns(self, stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
+        """
+        Analyze candlestick patterns for given stock data between specified dates.
+
+        :param stock_id: ID of the stock.
+        :param start_date: Start date for the analysis.
+        :param end_date: End date for the analysis.
+        :return: DataFrame with identified candlestick patterns.
+        """
+        try:
+            # Fetch data from data manager
+            stock_data = self._data_io_butler.get_data("raw_stock_data", stock_id, start_date, end_date)
+
+            # Ensure required columns exist in the data
+            required_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+            if not all(column in stock_data.columns for column in required_columns):
+                missing_columns = [column for column in required_columns if column not in stock_data.columns]
+                raise ValueError(f"Missing required columns in stock data: {missing_columns}")
+
+            # Process data for candlestick pattern analysis
+            processed_data = stock_data[required_columns].copy()
+            patterns_df = self._candlestick_pattern_analyzer.analyze_patterns(processed_data)
+
+            return patterns_df
+
+        except DataNotFoundError:
+            error_message = f"No data found for stock ID {stock_id} from {start_date} to {end_date}."
+            logger.error(error_message)
+            raise HTTPException(status_code=404, detail=error_message)
+
+        except redis.exceptions.RedisError as re:
+            error_message = f"Redis error occurred: {re}"
+            logger.error(error_message)
+            raise HTTPException(status_code=500, detail=error_message)
+
+        except Exception as e:
+            error_message = f"An unexpected error occurred: {e}"
+            logger.exception(error_message)
+            raise HTTPException(status_code=500, detail=error_message)
 
 
 def get_stock_analysis_serving_app():
