@@ -70,6 +70,17 @@ def delete_stock_data(prefix, stock_id, start_date, end_date):
     print(response.json())
 
 
+def analyze_candlestick_patterns(stock_id, start_date, end_date):
+    endpoint = f"{BASE_URL}/stock_data/analyze_candlestick_patterns"
+    data = {
+        "stock_ids": [stock_id],
+        "start_date": start_date,
+        "end_date": end_date
+    }
+    response = requests.post(endpoint, json=data)
+    return pd.DataFrame(response.json())
+
+
 # Example usage
 if __name__ == "__main__":
     stock_id = "AAPL"
@@ -88,6 +99,12 @@ if __name__ == "__main__":
         df = get_stock_data(prefix, stock_id, start_date, end_date)
         print(f"Fetched data for {stock_id}:")
         print(df.head())
+
+        # Analyze candlestick patterns
+        candlestick_patterns_df = analyze_candlestick_patterns(stock_id, start_date, end_date)
+        print(f"Candlestick patterns for {stock_id}:")
+        print(candlestick_patterns_df.head(30))
+        candlestick_patterns_df.to_csv("./test_candlestick_ana_aapl.csv")
 
         # Make some changes to the data (for demonstration purposes, we'll just add a new column here)
         df['example_new_col'] = 42
