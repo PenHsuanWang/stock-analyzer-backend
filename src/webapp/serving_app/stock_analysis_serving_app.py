@@ -14,7 +14,7 @@ from fastapi import HTTPException
 from core.analyzer.moving_average_analyzer import MovingAverageAnalyzer
 from core.analyzer.daily_return_analyzer import DailyReturnAnalyzer
 from core.analyzer.cross_asset_analyzer import CrossAssetAnalyzer
-from core.analyzer.candlestick_pattern_analyzer import CandlestickPatternAnalyzer  # 新導入
+from core.analyzer.candlestick_pattern_analyzer import CandlestickPatternAnalyzer
 
 from core.manager.data_manager import DataIOButler, DataNotFoundError
 
@@ -36,7 +36,21 @@ class StockAnalysisServingApp:
                 cls._app_instance._candlestick_pattern_analyzer = CandlestickPatternAnalyzer()
             return cls._app_instance
 
-    def calculating_ma_and_daily_return_and_saved_as_analyzed_prefix(
+    def _apply_candlestick_pattern_analyzer(self, stock_data: pd.DataFrame) -> pd.DataFrame:
+
+        # Ensure required columns exist in the data
+        required_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+        if not all(column in stock_data.columns for column in required_columns):
+            missing_columns = [column for column in required_columns if column not in stock_data.columns]
+            raise ValueError(f"Missing required columns in stock data: {missing_columns}")
+
+        # Process data for candlestick pattern analysis
+        processed_data = stock_data[required_columns].copy()
+        patterns_df = self._candlestick_pattern_analyzer.analyze_patterns(processed_data)
+
+        return patterns_df
+
+    def calculating_full_ana_and_saved_as_analyzed_prefix(
             self, prefix: str, stock_id: str, start_date: str, end_date: str,
             window_sizes: list[int]) -> None:
         """
@@ -60,6 +74,7 @@ class StockAnalysisServingApp:
             stock_data = self._data_io_butler.get_data(prefix, stock_id, start_date, end_date)
             analyzed_data = self._ma_analyzer.calculate_moving_average(stock_data, window_sizes)
             analyzed_data = self._daily_return_analyzer.calculate_daily_return(analyzed_data)
+            analyzed_data["Pattern"] = self._apply_candlestick_pattern_analyzer(analyzed_data)["Pattern"]  # extract the `Pattern` Column and added to analyzed_data
             self._data_io_butler.save_data("analyzed_stock_data", stock_id, start_date, end_date, analyzed_data)
         except DataNotFoundError:
             error_message = f"No data found for stock ID {stock_id} from {start_date} to {end_date}."
@@ -77,7 +92,7 @@ class StockAnalysisServingApp:
             raise HTTPException(status_code=500, detail=error_message)
 
     @staticmethod
-    def calculate_and_store_correlation(
+    def calculate_correlation(
             stock_ids: list[str], start_date: str, end_date: str, metric: str) -> pd.DataFrame:
         """
         Fetches stock data and calculates the correlation between the assets.
@@ -120,17 +135,7 @@ class StockAnalysisServingApp:
             # Fetch data from data manager
             stock_data = self._data_io_butler.get_data("raw_stock_data", stock_id, start_date, end_date)
 
-            # Ensure required columns exist in the data
-            required_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
-            if not all(column in stock_data.columns for column in required_columns):
-                missing_columns = [column for column in required_columns if column not in stock_data.columns]
-                raise ValueError(f"Missing required columns in stock data: {missing_columns}")
-
-            # Process data for candlestick pattern analysis
-            processed_data = stock_data[required_columns].copy()
-            patterns_df = self._candlestick_pattern_analyzer.analyze_patterns(processed_data)
-
-            return patterns_df
+            return self._apply_candlestick_pattern_analyzer(stock_data)
 
         except DataNotFoundError:
             error_message = f"No data found for stock ID {stock_id} from {start_date} to {end_date}."
