@@ -65,7 +65,7 @@ class StockAnalysisServingApp:
         :return: Dictionary containing 'Close' price data and moving averages.
         """
 
-        if prefix is not "analyzed_stock_data":
+        if prefix != "analyzed_stock_data":
             prefix = "raw_stock_data"
 
         # Calculate Moving Average
