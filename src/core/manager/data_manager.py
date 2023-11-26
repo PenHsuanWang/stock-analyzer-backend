@@ -30,7 +30,7 @@ class DataIOButler:
         self._lock = Lock()
 
     @staticmethod
-    def _generate_key(prefix: str, stock_id: str, start_date: str, end_date: str) -> str:
+    def _generate_major_stock_key(prefix: str, stock_id: str, start_date: str, end_date: str) -> str:
         """
         Generate a consistent Redis key based on stock information.
 
@@ -73,7 +73,7 @@ class DataIOButler:
         :param end_date: End date for the stock data.
         :param data: The dataframe containing the stock data.
         """
-        key = self._generate_key(prefix, stock_id, start_date, end_date)
+        key = self._generate_major_stock_key(prefix, stock_id, start_date, end_date)
         self._redis_client.set(key, data.to_json(orient="records"))
 
     def check_data_exists(self, prefix: str, stock_id: str, start_date: str, end_date: str) -> bool:
@@ -86,7 +86,7 @@ class DataIOButler:
         :param end_date: End date for the stock data.
         :return: True if data exists, else False.
         """
-        key = self._generate_key(prefix, stock_id, start_date, end_date)
+        key = self._generate_major_stock_key(prefix, stock_id, start_date, end_date)
         return bool(self._redis_client.exists(key))
 
     def get_data(self, prefix: str, stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
@@ -99,7 +99,7 @@ class DataIOButler:
         :param end_date: End date for the stock data.
         :return: Stock data as a DataFrame.
         """
-        key = self._generate_key(prefix, stock_id, start_date, end_date)
+        key = self._generate_major_stock_key(prefix, stock_id, start_date, end_date)
         data_json_bytes = self._redis_client.get(key)
 
         if data_json_bytes is None:
@@ -129,7 +129,7 @@ class DataIOButler:
         :param end_date: End date for the stock data.
         :param updated_dataframe: The updated dataframe.
         """
-        key = self._generate_key(prefix, stock_id, start_date, end_date)
+        key = self._generate_major_stock_key(prefix, stock_id, start_date, end_date)
         # Convert DataFrame to JSON and store it in Redis
         data_json = updated_dataframe.to_json(orient="records")
 
@@ -148,7 +148,7 @@ class DataIOButler:
         :param end_date: End date for the stock data.
         :return: True if deletion was successful, else False.
         """
-        key = self._generate_key(prefix, stock_id, start_date, end_date)
+        key = self._generate_major_stock_key(prefix, stock_id, start_date, end_date)
         return bool(self._redis_client.delete(key))
 
     # Add any additional data management methods as needed.
