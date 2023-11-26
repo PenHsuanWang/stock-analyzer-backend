@@ -81,7 +81,7 @@ def perform_full_stock_analysis(stock_id: str, start_date: str, end_date: str, w
                 pd.set_option('display.max_columns', None)
                 pd.set_option('display.width', None)
                 print("Analyzed Data:")
-                print(analyzed_data.head(30))
+                print(analyzed_data.head(60))
         else:
             print(f"Full analysis request failed with status code {response.status_code}: {response.text}")
     except requests.RequestException as e:
