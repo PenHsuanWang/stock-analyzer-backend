@@ -46,11 +46,9 @@ def compute_and_store_moving_average(
     :return: Confirmation message.
     """
     try:
-        app.calculating_ma_and_daily_return_and_saved_as_analyzed_prefix(prefix=request.prefix,
-                                                                         stock_id=request.stock_id,
-                                                                         start_date=request.start_date,
-                                                                         end_date=request.end_date,
-                                                                         window_sizes=request.window_sizes)
+        app.calculating_full_ana_and_saved_as_analyzed_prefix(prefix=request.prefix, stock_id=request.stock_id,
+                                                              start_date=request.start_date, end_date=request.end_date,
+                                                              window_sizes=request.window_sizes)
         return {"message": "Moving averages computed and stored into Redis successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -69,12 +67,8 @@ def calculate_correlation(
     :return: JSON response with correlation data.
     """
     try:
-        correlation_df = app.calculate_and_store_correlation(
-            stock_ids=request.stock_ids,
-            start_date=request.start_date,
-            end_date=request.end_date,
-            metric=request.metric
-        )
+        correlation_df = app.calculate_correlation(stock_ids=request.stock_ids, start_date=request.start_date,
+                                                   end_date=request.end_date, metric=request.metric)
         return correlation_df.to_dict()
     except HTTPException as http_exc:
         raise http_exc
