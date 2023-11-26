@@ -8,7 +8,7 @@ import numpy as np
 # Test the key generation
 def test_generate_key():
     expected_key = 'prefix:stock_id:2023-01-01:2023-12-31'
-    generated_key = DataIOButler._generate_key('prefix', 'stock_id', '2023-01-01', '2023-12-31')
+    generated_key = DataIOButler._generate_major_stock_key('prefix', 'stock_id', '2023-01-01', '2023-12-31')
     assert generated_key == expected_key
 
 
