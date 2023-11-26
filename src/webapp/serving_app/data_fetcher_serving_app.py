@@ -2,6 +2,7 @@ import threading
 
 import pandas as pd
 from src.utils.data_io.data_fetcher import YFinanceFetcher
+from src.utils.database_adaptors.redis_adaptor import RedisAdapter
 from src.core.manager.data_manager import DataIOButler
 
 class StockDataFetcherApp:
@@ -21,7 +22,7 @@ class StockDataFetcherApp:
     def __init__(self):
         if not self._is_initialized:
             # self._redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)  # adjust as necessary
-            self.data_io_butler = DataIOButler()
+            self.data_io_butler = DataIOButler(adapter=RedisAdapter())
             self._data_fetcher = YFinanceFetcher()
 
     def fetch_data_and_get_as_dataframe(self, stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:

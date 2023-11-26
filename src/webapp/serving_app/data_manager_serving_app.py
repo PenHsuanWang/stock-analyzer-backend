@@ -4,7 +4,8 @@ import threading
 
 import pandas as pd
 
-from core.manager.data_manager import DataIOButler
+from src.core.manager.data_manager import DataIOButler
+from src.utils.database_adaptors.redis_adaptor import RedisAdapter
 
 
 class DataManagerApp:
@@ -15,7 +16,7 @@ class DataManagerApp:
         with cls._app_lock:
             if cls._app is None:
                 cls._app = super().__new__(cls)
-                cls._app._data_io_butler = DataIOButler()  # Initialize the DataIOButler here
+                cls._app._data_io_butler = DataIOButler(adapter=RedisAdapter())  # Initialize the DataIOButler here
             return cls._app
 
     @staticmethod

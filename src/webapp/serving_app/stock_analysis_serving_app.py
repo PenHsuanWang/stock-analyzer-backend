@@ -18,6 +18,8 @@ from core.analyzer.candlestick_pattern_analyzer import CandlestickPatternAnalyze
 
 from core.manager.data_manager import DataIOButler, DataNotFoundError
 
+from utils.database_adaptors.redis_adaptor import RedisAdapter
+
 logger = logging.getLogger()
 
 
@@ -29,7 +31,7 @@ class StockAnalysisServingApp:
         with cls._app_lock:
             if cls._app_instance is None:
                 cls._app_instance = super().__new__(cls)
-                cls._app_instance._data_io_butler = DataIOButler()
+                cls._app_instance._data_io_butler = DataIOButler(RedisAdapter())
                 cls._app_instance._ma_analyzer = MovingAverageAnalyzer()
                 cls._daily_return_analyzer = DailyReturnAnalyzer()
                 cls._app_instance._cross_asset_analyzer = CrossAssetAnalyzer()
