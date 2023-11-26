@@ -1,19 +1,16 @@
-import pandas as pd
 from abc import ABC, abstractmethod
 
 
 class PreprocessorBase(ABC):
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self):
         """
-        The case class PreprocessorBase design for all different required data convert for advance analysis
-
-        :param df: input dataframe
+        The base class PreprocessorBase design for all different required data convert for advance analysis
         """
-        self.df = df
+        pass
 
     @abstractmethod
     def transform(self, *args, **kwargs):
         """
-        implement in concrete class
+        Implement in concrete class. This method should be defined to handle the transformation.
         """
         raise NotImplementedError
