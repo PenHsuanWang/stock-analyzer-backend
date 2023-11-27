@@ -9,51 +9,45 @@ class AbstractDatabaseAdapter(ABC):
     """
 
     @abstractmethod
-    def set_data(self, key: str, value: str):
+    def set_data(self, *args, **kwargs):
         """
         Store data in the database.
-
-        :param key: The key under which the data should be stored.
-        :param value: The data to store.
+        Accepts any number of arguments and keyword arguments.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def get_data(self, key: str) -> str:
+    def get_data(self, *args, **kwargs):
         """
         Retrieve data from the database.
-
-        :param key: The key of the data to retrieve.
-        :return: The data as a string.
+        Accepts any number of arguments and keyword arguments.
+        :return: Data from the database, format and type may vary.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def delete_data(self, key: str) -> bool:
+    def delete_data(self, *args, **kwargs) -> bool:
         """
         Delete data from the database.
-
-        :param key: The key of the data to delete.
+        Accepts any number of arguments and keyword arguments.
         :return: True if deletion was successful, False otherwise.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def exists(self, key: str) -> bool:
+    def exists(self, *args, **kwargs) -> bool:
         """
         Check if a key exists in the database.
-
-        :param key: The key to check.
+        Accepts any number of arguments and keyword arguments.
         :return: True if the key exists, False otherwise.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def keys(self, pattern: str = None) -> list:
+    def keys(self, *args, **kwargs):
         """
         Retrieve a list of keys from the database matching a pattern.
-
-        :param pattern: The pattern to match.
-        :return: A list of keys.
+        Accepts any number of arguments and keyword arguments.
+        :return: A list of keys, format may vary.
         """
         raise NotImplementedError

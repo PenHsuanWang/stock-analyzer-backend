@@ -18,7 +18,7 @@ from core.analyzer.candlestick_pattern_analyzer import CandlestickPatternAnalyze
 
 from core.manager.data_manager import DataIOButler, DataNotFoundError
 
-from utils.database_adaptors.redis_adaptor import RedisAdapter
+from utils.database_adapters.redis_adapter import RedisAdapter
 
 logger = logging.getLogger()
 
@@ -93,9 +93,8 @@ class StockAnalysisServingApp:
             logger.exception(error_message)
             raise HTTPException(status_code=500, detail=error_message)
 
-    @staticmethod
     def calculate_correlation(
-            stock_ids: list[str], start_date: str, end_date: str, metric: str) -> pd.DataFrame:
+            self, stock_ids: list[str], start_date: str, end_date: str, metric: str) -> pd.DataFrame:
         """
         Fetches stock data and calculates the correlation between the assets.
 
@@ -105,12 +104,11 @@ class StockAnalysisServingApp:
         :param metric: The metric on which to base the correlation calculation.
         :return: DataFrame with correlation results.
         """
-        data_io_butler = DataIOButler()
         series_list = []
 
         for stock_id in stock_ids:
             try:
-                stock_data = data_io_butler.get_data("analyzed_stock_data", stock_id, start_date, end_date)
+                stock_data = self._app_instance._data_io_butler.get_data("analyzed_stock_data", stock_id, start_date, end_date)
                 stock_series = stock_data[metric]
                 stock_series.name = stock_id
                 series_list.append(stock_series)

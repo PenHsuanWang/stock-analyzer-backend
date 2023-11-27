@@ -2,7 +2,7 @@ import threading
 
 import pandas as pd
 from src.utils.data_io.data_fetcher import YFinanceFetcher
-from src.utils.database_adaptors.redis_adaptor import RedisAdapter
+from src.utils.database_adapters.redis_adapter import RedisAdapter
 from src.core.manager.data_manager import DataIOButler
 
 class StockDataFetcherApp:

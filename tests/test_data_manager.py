@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 from src.core.manager.data_manager import DataIOButler, DataNotFoundError
-from src.utils.database_adaptors.base import AbstractDatabaseAdapter
+from src.utils.database_adapters.base import AbstractDatabaseAdapter
 
 
 class MockDatabaseAdapter(AbstractDatabaseAdapter):

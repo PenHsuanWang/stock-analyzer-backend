@@ -9,8 +9,8 @@ import numpy as np
 from io import StringIO
 from threading import Lock
 
-from utils.database_adaptors.redis_adaptor import RedisAdapter
-from utils.database_adaptors.base import AbstractDatabaseAdapter
+from utils.database_adapters.redis_adapter import RedisAdapter
+from utils.database_adapters.base import AbstractDatabaseAdapter
 
 
 class DataNotFoundError(Exception):
