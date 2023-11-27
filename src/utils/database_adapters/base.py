@@ -1,7 +1,7 @@
 # utils/database_adaptors/base.py
 
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional
+
 
 class AbstractDatabaseAdapter(ABC):
     """
@@ -9,53 +9,45 @@ class AbstractDatabaseAdapter(ABC):
     """
 
     @abstractmethod
-    def set_data(self, key: str, value: Any):
+    def set_data(self, *args, **kwargs):
         """
         Store data in the database.
-
-        :param key: The key under which the data should be stored.
-        :param value: The data to store. The type of data can be any,
-                      as it depends on the specific database adapter.
+        Accepts any number of arguments and keyword arguments.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def get_data(self, key: str) -> Optional[Any]:
+    def get_data(self, *args, **kwargs):
         """
         Retrieve data from the database.
-
-        :param key: The key of the data to retrieve.
-        :return: The data as a specific type, depending on the database adapter.
-                 Returns None if no data is found.
+        Accepts any number of arguments and keyword arguments.
+        :return: Data from the database, format and type may vary.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def delete_data(self, key: str) -> bool:
+    def delete_data(self, *args, **kwargs) -> bool:
         """
         Delete data from the database.
-
-        :param key: The key of the data to delete.
+        Accepts any number of arguments and keyword arguments.
         :return: True if deletion was successful, False otherwise.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def exists(self, key: str) -> bool:
+    def exists(self, *args, **kwargs) -> bool:
         """
         Check if a key exists in the database.
-
-        :param key: The key to check.
+        Accepts any number of arguments and keyword arguments.
         :return: True if the key exists, False otherwise.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def keys(self, pattern: Optional[str] = None) -> List[str]:
+    def keys(self, *args, **kwargs):
         """
         Retrieve a list of keys from the database matching a pattern.
-
-        :param pattern: The pattern to match. If None, all keys may be returned.
-        :return: A list of keys as strings.
+        Accepts any number of arguments and keyword arguments.
+        :return: A list of keys, format may vary.
         """
         raise NotImplementedError
