@@ -1,7 +1,7 @@
 # utils/database_adapters/redis_adapter.py
 
 import redis
-from utils.database_adapters.base import AbstractDatabaseAdapter
+from src.utils.database_adapters.base import AbstractDatabaseAdapter
 
 class RedisAdapter(AbstractDatabaseAdapter):
     """

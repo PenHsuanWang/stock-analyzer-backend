@@ -9,7 +9,7 @@ from minio.error import S3Error
 @pytest.fixture(scope="module")
 def minio_adapter():
     # Mock the MinIO client
-    with patch('utils.database_adapters.minio_adapter.Minio') as mock_minio:
+    with patch('src.utils.database_adapters.minio_adapter.Minio') as mock_minio:
         mock_minio.return_value = Mock()
         adapter = MinIOAdapter('localhost:9000', 'minioadmin', 'minioadmin', secure=False)
         yield adapter

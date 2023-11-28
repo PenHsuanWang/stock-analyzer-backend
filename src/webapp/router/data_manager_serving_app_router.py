@@ -3,7 +3,7 @@ import pandas as pd
 from fastapi import APIRouter, Depends, Body, HTTPException
 from pydantic import BaseModel
 
-from webapp.serving_app.data_manager_serving_app import DataManagerApp, get_app
+from src.webapp.serving_app.data_manager_serving_app import DataManagerApp, get_app
 
 router = APIRouter()
 
