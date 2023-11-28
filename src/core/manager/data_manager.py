@@ -11,6 +11,7 @@ from threading import Lock
 
 from utils.database_adapters.redis_adapter import RedisAdapter
 from utils.database_adapters.base import AbstractDatabaseAdapter
+from utils.storage_identifier.identifier_strategy import DefaultStockDataIdentifierGenerator, SlicingStockDataIdentifierGenerator, NullStockDataIdentifierGenerator
 
 
 class DataNotFoundError(Exception):
@@ -32,6 +33,23 @@ class DataIOButler:
         # )
         self.adapter = adapter
         self._lock = Lock()
+
+    @staticmethod
+    def _select_key_strategy(**kwargs):
+        params_criteria_mapping = {
+            frozenset(['prefix', 'stock_id', 'start_date', 'end_date']): DefaultStockDataIdentifierGenerator,
+            frozenset(['prefix', 'stock_id', 'start_date', 'end_date', 'post_id']): SlicingStockDataIdentifierGenerator,
+            # add more criteria here
+        }
+
+        # make sure the order of tuple will not affect
+        keys = frozenset(kwargs.keys())
+        strategy_class = params_criteria_mapping.get(keys)
+
+        if strategy_class:
+            return strategy_class()  # dynamically initialization
+        else:
+            raise ValueError("No matching strategy found for the given criteria")
 
     @staticmethod
     def _generate_major_stock_key(prefix: str, stock_id: str, start_date: str, end_date: str) -> str:
@@ -67,7 +85,19 @@ class DataIOButler:
         :param end_date: End date for the stock data.
         :param data: The dataframe containing the stock data.
         """
-        key = self._generate_major_stock_key(prefix, stock_id, start_date, end_date)
+        # key = self._generate_major_stock_key(prefix, stock_id, start_date, end_date)
+        identifier_strategy = self._select_key_strategy(
+            prefix=prefix,
+            stock_id=stock_id,
+            start_date=start_date,
+            end_date=end_date)
+
+        key = identifier_strategy.generate_identifier(
+            prefix=prefix,
+            stock_id=stock_id,
+            start_date=start_date,
+            end_date=end_date)
+
         self.adapter.set_data(key, data.to_json(orient="records"))
 
     def check_data_exists(self, prefix: str, stock_id: str, start_date: str, end_date: str) -> bool:
