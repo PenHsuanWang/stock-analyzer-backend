@@ -73,11 +73,22 @@ class StockAnalysisServingApp:
         # Calculate Moving Average
         try:
             #  To do refactor, extract and save analyzed dataframe at here
-            stock_data = self._data_io_butler.get_data(prefix, stock_id, start_date, end_date)
+            stock_data = self._data_io_butler.get_data(
+                prefix=prefix,
+                stock_id=stock_id,
+                start_date=start_date,
+                end_date=end_date
+            )
             analyzed_data = self._ma_analyzer.calculate_moving_average(stock_data, window_sizes)
             analyzed_data = self._daily_return_analyzer.calculate_daily_return(analyzed_data)
             analyzed_data["Pattern"] = self._apply_candlestick_pattern_analyzer(analyzed_data)["Pattern"]  # extract the `Pattern` Column and added to analyzed_data
-            self._data_io_butler.save_data("analyzed_stock_data", stock_id, start_date, end_date, analyzed_data)
+            self._data_io_butler.save_data(
+                data=analyzed_data,
+                prefix="analyzed_stock_data",
+                stock_id=stock_id,
+                start_date=start_date,
+                end_date=end_date
+                )
         except DataNotFoundError:
             error_message = f"No data found for stock ID {stock_id} from {start_date} to {end_date}."
             logger.error(error_message)
@@ -108,7 +119,12 @@ class StockAnalysisServingApp:
 
         for stock_id in stock_ids:
             try:
-                stock_data = self._app_instance._data_io_butler.get_data("analyzed_stock_data", stock_id, start_date, end_date)
+                stock_data = self._app_instance._data_io_butler.get_data(
+                    prefix="analyzed_stock_data",
+                    stock_id=stock_id,
+                    start_date=start_date,
+                    end_date=end_date
+                )
                 stock_series = stock_data[metric]
                 stock_series.name = stock_id
                 series_list.append(stock_series)
