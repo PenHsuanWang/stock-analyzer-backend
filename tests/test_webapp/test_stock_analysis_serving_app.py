@@ -1,9 +1,4 @@
 from src.webapp.serving_app.stock_analysis_serving_app import StockAnalysisServingApp
-from src.core.manager.data_manager import DataIOButler
-from src.core.analyzer.moving_average_analyzer import MovingAverageAnalyzer
-from src.core.analyzer.daily_return_analyzer import DailyReturnAnalyzer
-
-from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
