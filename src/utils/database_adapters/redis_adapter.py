@@ -23,7 +23,7 @@ class RedisAdapter(AbstractDatabaseAdapter):
             connection_pool=redis.ConnectionPool(host=host, port=port, db=db)
         )
 
-    def set_data(self, key: str, value: str):
+    def save_data(self, key: str, value: str):
         """
         Store data in Redis.
 
@@ -31,6 +31,21 @@ class RedisAdapter(AbstractDatabaseAdapter):
         :param value: The string data to store in Redis.
         """
         self._redis_client.set(key, value)
+
+    def save_batch_data(self, key: str, value: dict, data_type: str, additional_params: dict = None):
+        """
+        Store multiple data items in Redis in a batch operation.
+
+        :param key: The key under which the data should be stored.
+        :param value: The data to store, expected to be a dictionary for hash data type.
+        :param data_type: The type of data structure to use in Redis ('list' or 'hash').
+        :param additional_params: Additional parameters required for specific operations.
+        """
+        if data_type == 'list':
+            self._redis_client.lpush(key, *value)
+        elif data_type == 'hash':
+            for field, val in value.items():
+                self._redis_client.hset(key, field, val)
 
     def get_data(self, key: str) -> str:
         """
@@ -41,6 +56,22 @@ class RedisAdapter(AbstractDatabaseAdapter):
         """
         data = self._redis_client.get(key)
         return data.decode('utf-8') if data else None
+
+    def get_batch_data(self, key: str, data_type: str, additional_params: dict = None) -> dict:
+        """
+        Retrieve multiple data items from Redis in a batch operation.
+
+        :param key: The key of the data to retrieve.
+        :param data_type: The type of data structure to retrieve from Redis ('hash_keys' or other).
+        :param additional_params: Additional parameters required for specific operations.
+        :return: A dictionary of data items.
+        """
+        data = {}
+        if data_type == 'hash_keys':
+            fields = self._redis_client.hkeys(key)
+            for field in fields:
+                data[field] = self._redis_client.hget(key, field).decode('utf-8')
+        return data
 
     def delete_data(self, key: str) -> bool:
         """
@@ -68,3 +99,42 @@ class RedisAdapter(AbstractDatabaseAdapter):
         :return: A list of keys that match the given pattern.
         """
         return [key.decode('utf-8') for key in self._redis_client.keys(pattern=pattern or "*")]
+
+    def lpush(self, key: str, *values):
+        """
+        Prepend one or multiple values to a list.
+
+        :param key: The key of the list.
+        :param values: Values to prepend.
+        """
+        self._redis_client.lpush(key, *values)
+
+    def hset(self, key: str, field: str, value: str):
+        """
+        Set the string value of a hash field.
+
+        :param key: The key of the hash.
+        :param field: The field within the hash.
+        :param value: The value to set.
+        """
+        self._redis_client.hset(key, field, value)
+
+    def hkeys(self, key: str):
+        """
+        Get all the fields in a hash.
+
+        :param key: The key of the hash.
+        :return: List of fields within the hash.
+        """
+        return [field.decode('utf-8') for field in self._redis_client.hkeys(key)]
+
+    def hget(self, key: str, field: str) -> str:
+        """
+        Get the value of a hash field.
+
+        :param key: The key of the hash.
+        :param field: The field within the hash.
+        :return: The value of the field.
+        """
+        value = self._redis_client.hget(key, field)
+        return value.decode('utf-8') if value else None

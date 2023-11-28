@@ -16,6 +16,12 @@ class SlicingStockDataIdentifierGenerator(BaseStorageIdentifierGenerator):
         return identifier
 
 
+class GroupDataFramesIdentifierGenerator(BaseStorageIdentifierGenerator):
+    def generate_identifier(self, group_id, start_date, end_date):
+        identifier = f"{group_id}:{start_date}:{end_date}"
+        return identifier
+
+
 class NullStockDataIdentifierGenerator(BaseStorageIdentifierGenerator):
     def generate_identifier(self, *args, **kwargs):
         identifier = f""
