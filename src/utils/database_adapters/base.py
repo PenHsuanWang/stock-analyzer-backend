@@ -2,16 +2,15 @@
 
 from abc import ABC, abstractmethod
 
-
 class AbstractDatabaseAdapter(ABC):
     """
     Abstract base class for all database adapters.
     """
 
     @abstractmethod
-    def set_data(self, *args, **kwargs):
+    def save_data(self, *args, **kwargs):
         """
-        Store data in the database.
+        Store a single data item in the database.
         Accepts any number of arguments and keyword arguments.
         """
         raise NotImplementedError
@@ -19,7 +18,24 @@ class AbstractDatabaseAdapter(ABC):
     @abstractmethod
     def get_data(self, *args, **kwargs):
         """
-        Retrieve data from the database.
+        Retrieve a single data item from the database.
+        Accepts any number of arguments and keyword arguments.
+        :return: Data from the database, format and type may vary.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def save_batch_data(self, *args, **kwargs):
+        """
+        Store multiple data items in the database in a batch operation.
+        Accepts any number of arguments and keyword arguments.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_batch_data(self, *args, **kwargs):
+        """
+        Retrieve multiple data items from the database in a batch operation.
         Accepts any number of arguments and keyword arguments.
         :return: Data from the database, format and type may vary.
         """

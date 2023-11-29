@@ -11,7 +11,7 @@ from threading import Lock
 
 from src.utils.database_adapters.redis_adapter import RedisAdapter
 from src.utils.database_adapters.base import AbstractDatabaseAdapter
-from src.utils.storage_identifier.identifier_strategy import DefaultStockDataIdentifierGenerator, SlicingStockDataIdentifierGenerator, NullStockDataIdentifierGenerator
+from src.utils.storage_identifier import identifier_strategy
 
 
 class DataNotFoundError(Exception):
@@ -37,8 +37,10 @@ class DataIOButler:
     @staticmethod
     def _select_key_strategy(**kwargs):
         params_criteria_mapping = {
-            frozenset(['prefix', 'stock_id', 'start_date', 'end_date']): DefaultStockDataIdentifierGenerator,
-            frozenset(['prefix', 'stock_id', 'start_date', 'end_date', 'post_id']): SlicingStockDataIdentifierGenerator,
+            frozenset(['prefix', 'stock_id', 'start_date', 'end_date']): identifier_strategy.DefaultStockDataIdentifierGenerator,
+            frozenset(['prefix', 'stock_id', 'start_date', 'end_date', 'post_id']): identifier_strategy.SlicingStockDataIdentifierGenerator,
+            frozenset(['group_id', 'start_date', 'end_date', 'group_df_list']): identifier_strategy.GroupDataFramesIdentifierGenerator,
+            frozenset(['group_id', 'start_date', 'end_date']): identifier_strategy.GroupDataFramesIdentifierGenerator
             # add more criteria here
         }
 
@@ -50,19 +52,6 @@ class DataIOButler:
             return strategy_class()  # dynamically initialization
         else:
             raise ValueError("No matching strategy found for the given criteria")
-
-    # @staticmethod
-    # def _generate_major_stock_key(*args, **kwargs) -> str:
-    #     """
-    #     Generate a consistent Redis key based on stock information.
-    #
-    #     :param prefix: the tag to distinguish the data stage
-    #     :param stock_id: ID of the stock.
-    #     :param start_date: Start date for the stock data.
-    #     :param end_date: End date for the stock data.
-    #     :return: Generated key string.
-    #     """
-    #     return f"{prefix}:{stock_id}:{start_date}:{end_date}"
 
     @staticmethod
     def _with_retries(max_retries, function, *args, **kwargs):
@@ -86,10 +75,49 @@ class DataIOButler:
         :param data: The dataframe containing the stock data.
         """
         # key = self._generate_major_stock_key(prefix, stock_id, start_date, end_date)
-        identifier_strategy = self._select_key_strategy(**kwargs)
-        key = identifier_strategy.generate_identifier(**kwargs)
+        storage_unit_identifier = self._select_key_strategy(**kwargs)
+        key = storage_unit_identifier.generate_identifier(**kwargs)
 
-        self.adapter.set_data(key, data.to_json(orient="records"))
+        self.adapter.save_data(key, data.to_json(orient="records"))
+
+    def save_dataframes_group(self, **kwargs) -> None:
+        """
+        Store a group of DataFrames in Redis using a dynamically selected key strategy.
+
+        Accepts keyword arguments to define the parameters for generating the storage key and the data to store.
+        """
+        storage_unit_identifier = self._select_key_strategy(**kwargs)
+        key = storage_unit_identifier.generate_identifier(
+            group_id=kwargs['group_id'],
+            start_date=kwargs['start_date'],
+            end_date=kwargs['end_date']
+        )
+
+        group_df_list = kwargs['group_df_list']
+        hash_data = {f'stock:{index}': df.to_json(orient='records') for index, df in enumerate(group_df_list, start=1)}
+
+        self.adapter.save_batch_data(key, hash_data, 'hash')
+
+    def get_dataframes_group(self, **kwargs) -> dict:
+        """
+        Retrieve a group of DataFrames from Redis using a dynamically selected key strategy.
+
+        Accepts keyword arguments to define the parameters for generating the storage key.
+        """
+        storage_unit_identifier = self._select_key_strategy(**kwargs)
+        key = storage_unit_identifier.generate_identifier(
+            group_id=kwargs['group_id'],
+            start_date=kwargs['start_date'],
+            end_date=kwargs['end_date']
+        )
+
+        dataframes = {}
+        stock_data = self.adapter.get_batch_data(key, 'hash_keys')
+
+        for stock_id, df_json in stock_data.items():
+            dataframes[stock_id] = pd.read_json(df_json, orient='records')
+
+        return dataframes
 
     def check_data_exists(self, *args, **kwargs) -> bool:
         """
@@ -102,8 +130,8 @@ class DataIOButler:
         :return: True if data exists, else False.
         """
         # key = self._generate_major_stock_key(**kwargs)
-        identifier_strategy = self._select_key_strategy(**kwargs)
-        key = identifier_strategy.generate_identifier(**kwargs)
+        storage_unit_identifier = self._select_key_strategy(**kwargs)
+        key = storage_unit_identifier.generate_identifier(**kwargs)
         return self.adapter.exists(key)
 
     def get_data(self, *args, **kwargs) -> pd.DataFrame:
@@ -117,8 +145,8 @@ class DataIOButler:
         :return: Stock data as a DataFrame.
         """
         # key = self._generate_major_stock_key(**kwargs)
-        identifier_strategy = self._select_key_strategy(**kwargs)
-        key = identifier_strategy.generate_identifier(**kwargs)
+        storage_unit_identifier = self._select_key_strategy(**kwargs)
+        key = storage_unit_identifier.generate_identifier(**kwargs)
         data_json_str = self.adapter.get_data(key)
 
         if data_json_str is None:
@@ -141,8 +169,8 @@ class DataIOButler:
         :param updated_dataframe: The updated dataframe.
         """
         # key = self._generate_major_stock_key(**kwargs)
-        identifier_strategy = self._select_key_strategy(**kwargs)
-        key = identifier_strategy.generate_identifier(**kwargs)
+        storage_unit_identifier = self._select_key_strategy(**kwargs)
+        key = storage_unit_identifier.generate_identifier(**kwargs)
         # Convert DataFrame to JSON and store it in Redis
         data_json = updated_dataframe.to_json(orient="records")
 
@@ -151,7 +179,7 @@ class DataIOButler:
 
             # with self._redis_client.pipeline() as pipe:
             #     self._with_retries(5, self._update_redis_data, pipe, key, data_json)
-            self.adapter.set_data(key, data_json)
+            self.adapter.save_data(key, data_json)
 
     def delete_data(self, *args, **kwargs) -> bool:
         """
@@ -164,8 +192,8 @@ class DataIOButler:
         :return: True if deletion was successful, else False.
         """
         # key = self._generate_major_stock_key(**kwargs)
-        identifier_strategy = self._select_key_strategy(**kwargs)
-        key = identifier_strategy.generate_identifier(**kwargs)
+        storage_unit_identifier = self._select_key_strategy(**kwargs)
+        key = storage_unit_identifier.generate_identifier(**kwargs)
         return self.adapter.delete_data(key)
 
 
