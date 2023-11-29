@@ -1,7 +1,10 @@
 # utils/database_adapters/redis_adapter.py
 
 import redis
+import json
+
 from src.utils.database_adapters.base import AbstractDatabaseAdapter
+
 
 class RedisAdapter(AbstractDatabaseAdapter):
     """
@@ -32,7 +35,7 @@ class RedisAdapter(AbstractDatabaseAdapter):
         """
         self._redis_client.set(key, value)
 
-    def save_batch_data(self, key: str, value: dict, data_type: str, additional_params: dict = None):
+    def save_batch_data(self, key: str, value: dict, data_type: str, additional_params: dict = None) -> bool:
         """
         Store multiple data items in Redis in a batch operation.
 
@@ -41,11 +44,20 @@ class RedisAdapter(AbstractDatabaseAdapter):
         :param data_type: The type of data structure to use in Redis ('list' or 'hash').
         :param additional_params: Additional parameters required for specific operations.
         """
-        if data_type == 'list':
-            self._redis_client.lpush(key, *value)
-        elif data_type == 'hash':
-            for field, val in value.items():
-                self._redis_client.hset(key, field, val)
+
+        with self._redis_client.pipeline() as pipe:
+            try:
+                if data_type == 'list':
+                    pipe.lpush(key, *value)
+                elif data_type == 'hash':
+                    serialized_value = {field: json.dumps(val) for field, val in value.items()}
+                    pipe.hmset(key, serialized_value)
+                pipe.execute()
+            except Exception:
+                return False
+
+        print("Store data successfully")
+        return True
 
     def get_data(self, key: str) -> str:
         """
@@ -68,9 +80,13 @@ class RedisAdapter(AbstractDatabaseAdapter):
         """
         data = {}
         if data_type == 'hash_keys':
-            fields = self._redis_client.hkeys(key)
-            for field in fields:
-                data[field] = self._redis_client.hget(key, field).decode('utf-8')
+            with self._redis_client.pipeline() as pipe:
+                fields = self._redis_client.hkeys(key)
+                for field in fields:
+                    pipe.hget(key, field)
+                values = pipe.execute()
+
+            data = {field.decode('utf-8'): json.loads(value.decode('utf-8')) for field, value in zip(fields, values)}
         return data
 
     def delete_data(self, key: str) -> bool:

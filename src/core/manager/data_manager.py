@@ -40,6 +40,7 @@ class DataIOButler:
             frozenset(['prefix', 'stock_id', 'start_date', 'end_date']): identifier_strategy.DefaultStockDataIdentifierGenerator,
             frozenset(['prefix', 'stock_id', 'start_date', 'end_date', 'post_id']): identifier_strategy.SlicingStockDataIdentifierGenerator,
             frozenset(['group_id', 'start_date', 'end_date', 'group_df_list']): identifier_strategy.GroupDataFramesIdentifierGenerator,
+            frozenset(['group_id', 'start_date', 'end_date']): identifier_strategy.GroupDataFramesIdentifierGenerator
             # add more criteria here
         }
 
