@@ -18,6 +18,7 @@ from src.core.analyzer.candlestick_pattern_analyzer import CandlestickPatternAna
 
 from src.core.manager.data_manager import DataIOButler, DataNotFoundError
 
+from src.utils.data_io.data_fetcher import YFinanceFetcher
 from src.utils.database_adapters.redis_adapter import RedisAdapter
 
 logger = logging.getLogger()
@@ -31,12 +32,31 @@ class StockAnalysisServingApp:
         with cls._app_lock:
             if cls._app_instance is None:
                 cls._app_instance = super().__new__(cls)
-                cls._app_instance._data_io_butler = DataIOButler(RedisAdapter())
+                cls._data_fetcher = YFinanceFetcher()
+                cls._app_instance._data_io_butler = DataIOButler(adapter=RedisAdapter())
                 cls._app_instance._ma_analyzer = MovingAverageAnalyzer()
                 cls._daily_return_analyzer = DailyReturnAnalyzer()
                 cls._app_instance._cross_asset_analyzer = CrossAssetAnalyzer()
                 cls._app_instance._candlestick_pattern_analyzer = CandlestickPatternAnalyzer()
             return cls._app_instance
+
+    def _fetch_data_and_get_as_dataframe(self, stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
+        """
+        provide stock id and time range, calling the data fetcher to extract stock price data via yfinance api
+        :param stock_id:
+        :param start_date:
+        :param end_date:
+        :return:
+        """
+        try:
+            self._data_fetcher.fetch_from_source(stock_id=stock_id, start_date=start_date, end_date=end_date)
+        except Exception as e:
+            print(f"error happen when fetching data. please check the input stock_id and time range. Full stack error: {e}")
+            raise RuntimeError
+
+        df = self._data_fetcher.get_as_dataframe()
+
+        return df
 
     def _apply_candlestick_pattern_analyzer(self, stock_data: pd.DataFrame) -> pd.DataFrame:
 
@@ -51,6 +71,58 @@ class StockAnalysisServingApp:
         patterns_df = self._candlestick_pattern_analyzer.analyze_patterns(processed_data)
 
         return patterns_df
+
+    def fetch_and_do_full_ana_and_save(
+            self, stock_id: str, start_date: str, end_date: str,
+            window_sizes: list[int]
+    ) -> None:
+        """
+
+        :param stock_id:
+        :param start_date:
+        :param end_date:
+        :param window_sizes:
+        :return:
+        """
+
+        try:
+            # fetch data
+            raw_df = self._fetch_data_and_get_as_dataframe(stock_id, start_date, end_date)
+        except Exception as e:
+            print("Failed to fetch data")
+            error_message = f"An unexpected error occurred: {e} during fetching data"
+            logger.exception(error_message)
+            raise HTTPException(status_code=500, detail=error_message)
+
+        try:
+            # do full analysis
+            analyzed_data = self._ma_analyzer.calculate_moving_average(raw_df, window_sizes)
+            analyzed_data = self._daily_return_analyzer.calculate_daily_return(analyzed_data)
+            analyzed_data["Pattern"] = self._apply_candlestick_pattern_analyzer(analyzed_data)["Pattern"]  # extract the `Pattern` Column and added to analyzed_data
+
+            # save to redis
+            self._data_io_butler.save_data(
+                data=analyzed_data,
+                prefix="analyzed_stock_data",
+                stock_id=stock_id,
+                start_date=start_date,
+                end_date=end_date
+            )
+
+        except DataNotFoundError:
+            error_message = f"No data found for stock ID {stock_id} from {start_date} to {end_date}."
+            logger.error(error_message)
+            raise HTTPException(status_code=404, detail=error_message)
+
+        except redis.exceptions.RedisError as re:
+            error_message = f"Redis error occurred: {re}"
+            logger.error(error_message)
+            raise HTTPException(status_code=500, detail=error_message)
+
+        except Exception as e:
+            error_message = f"An unexpected error occurred: {e}"
+            logger.exception(error_message)
+            raise HTTPException(status_code=500, detail=error_message)
 
     def calculating_full_ana_and_saved_as_analyzed_prefix(
             self, prefix: str, stock_id: str, start_date: str, end_date: str,
