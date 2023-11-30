@@ -5,7 +5,7 @@ import threading
 import pandas as pd
 
 from src.core.manager.data_manager import DataIOButler
-from src.utils.database_adaptors.redis_adaptor import RedisAdapter
+from src.utils.database_adapters.redis_adapter import RedisAdapter
 
 
 class DataManagerApp:
@@ -25,16 +25,31 @@ class DataManagerApp:
 
     @staticmethod
     def get_stock_data(prefix: str, stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
-        return DataManagerApp()._data_io_butler.get_data(prefix, stock_id, start_date, end_date)
+        return DataManagerApp()._data_io_butler.get_data(
+            prefix=prefix,
+            stock_id=stock_id,
+            start_date=start_date,
+            end_date=end_date
+        )
 
     @staticmethod
     def check_data(prefix: str, stock_id: str, start_date: str, end_date: str) -> bool:
-        return DataManagerApp()._data_io_butler.check_data_exists(prefix, stock_id, start_date, end_date)
+        return DataManagerApp()._data_io_butler.check_data_exists(
+            prefix=prefix,
+            stock_id=stock_id,
+            start_date=start_date,
+            end_date=end_date
+        )
 
     @staticmethod
     def update_stock_data(prefix: str, stock_id: str, start_date: str, end_date: str, updated_dataframe: pd.DataFrame) -> bool:
         try:
-            DataManagerApp()._data_io_butler.update_data(prefix, stock_id, start_date, end_date, updated_dataframe)
+            DataManagerApp()._data_io_butler.update_data(
+                prefix=prefix,
+                stock_id=stock_id,
+                start_date=start_date, end_date=end_date,
+                updated_dataframe=updated_dataframe
+            )
             return True
         except Exception as e:
             print(e)
@@ -42,7 +57,12 @@ class DataManagerApp:
 
     @staticmethod
     def delete_stock_data(prefix: str, stock_id: str, start_date: str, end_date: str) -> bool:
-        return DataManagerApp()._data_io_butler.delete_data(prefix, stock_id, start_date, end_date)
+        return DataManagerApp()._data_io_butler.delete_data(
+            prefix=prefix,
+            stock_id=stock_id,
+            start_date=start_date,
+            end_date=end_date
+        )
 
 
 def get_app():

@@ -2,7 +2,7 @@ import threading
 
 import pandas as pd
 from src.utils.data_io.data_fetcher import YFinanceFetcher
-from src.utils.database_adaptors.redis_adaptor import RedisAdapter
+from src.utils.database_adapters.redis_adapter import RedisAdapter
 from src.core.manager.data_manager import DataIOButler
 
 class StockDataFetcherApp:
@@ -57,7 +57,13 @@ class StockDataFetcherApp:
         :return:
         """
         df = self.fetch_data_and_get_as_dataframe(stock_id, start_date, end_date)
-        self.data_io_butler.save_data("raw_stock_data", stock_id, start_date, end_date, df)
+        self.data_io_butler.save_data(
+            data=df,
+            prefix="raw_stock_data",
+            stock_id=stock_id,
+            start_date=start_date,
+            end_date=end_date
+        )
 
 
 def get_app():
