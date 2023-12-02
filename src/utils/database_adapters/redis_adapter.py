@@ -98,6 +98,31 @@ class RedisAdapter(AbstractDatabaseAdapter):
         """
         return bool(self._redis_client.delete(key))
 
+    def delete_batch_data(self, key: str, data_type: str, additional_params: dict = None) -> bool:
+        """
+        Delete multiple data items from Redis in a batch operation.
+
+        :param key: The key under which the data items are stored.
+        :param data_type: The type of data structure to delete from Redis ('hash_keys' or other).
+        :param additional_params: Additional parameters required for specific operations.
+        :return: True if deletion was successful, False otherwise.
+        """
+        try:
+            if data_type == 'hash_keys':
+                fields = self._redis_client.hkeys(key)
+                with self._redis_client.pipeline() as pipe:
+                    for field in fields:
+                        pipe.hdel(key, field)
+                    pipe.execute()
+            else:
+                # Handle other data types (if applicable)
+                # Example: if data_type == 'some_other_type': ...
+                pass
+            return True
+        except Exception as e:
+            print(f"Error during batch delete: {e}")
+            return False
+
     def exists(self, key: str) -> bool:
         """
         Check if a key exists in Redis.
