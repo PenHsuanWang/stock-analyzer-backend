@@ -3,6 +3,7 @@ from unittest.mock import patch
 from src.webapp.router.data_manager_serving_app_router import router
 from src.core.manager.data_manager import DataIOButler
 import pandas as pd
+import numpy as np
 
 client = TestClient(router)
 
@@ -29,5 +30,41 @@ def test_get_stock_data(mock_get_data):
     assert response.status_code == 200
     assert response.json() == {"data": df.to_dict(orient="records")}
 
+
+def test_check_data_exists():
+    response = client.post("/stock_data/check_data_exists", json={
+        "prefix": "test_prefix",
+        "stock_id": "test_stock_id",
+        "start_date": "2023-01-01",
+        "end_date": "2023-01-30"
+    })
+    assert response.status_code == 200
+
+
+def test_save_and_get_delete_dataframes_group():
+    date_range = pd.date_range(start="2023-01-01", end="2023-01-30")
+    group_df_list = [pd.DataFrame(np.random.randn(len(date_range), 4), columns=list('ABCD'), index=date_range).to_dict(orient='records') for _ in range(5)]
+
+    save_response = client.post("/group_data/save", json={
+        "group_id": "test_group_id",
+        "start_date": "2023-01-01",
+        "end_date": "2023-01-30",
+        "group_df_list": group_df_list
+    })
+    assert save_response.status_code == 200
+
+    get_response = client.get("/group_data/get", params={
+        "group_id": "test_group_id",
+        "start_date": "2023-01-01",
+        "end_date": "2023-01-30"
+    })
+    assert get_response.status_code == 200
+
+    delete_response = client.delete("/group_data/delete", params={
+        "group_id": "test_group_id",
+        "start_date": "2023-01-01",
+        "end_date": "2023-01-30"
+    })
+    assert delete_response.status_code == 200
 
 # Add more tests for each endpoint in data_manager_serving_app_router.py

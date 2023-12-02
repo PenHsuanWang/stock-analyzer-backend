@@ -42,6 +42,15 @@ class AbstractDatabaseAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def delete_batch_data(self, *args, **kwargs) -> bool:
+        """
+        Delete multiple data items from the database in a batch operation.
+        Accepts any number of arguments and keyword arguments.
+        :return: True if deletion was successful, False otherwise.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def delete_data(self, *args, **kwargs) -> bool:
         """
         Delete data from the database.
