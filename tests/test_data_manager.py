@@ -2,7 +2,6 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 import pandas as pd
-import numpy as np
 
 from src.core.manager.data_manager import DataIOButler, DataNotFoundError
 from src.utils.database_adapters.base import AbstractDatabaseAdapter
@@ -27,6 +26,9 @@ class MockDatabaseAdapter(AbstractDatabaseAdapter):
 
     def delete_data(self, key: str) -> bool:
         return self.data_store.pop(key, None) is not None
+
+    def delete_batch_data(self, key: str, data_type: str, additional_params: dict = None) -> bool:
+        return self.batch_data_store.pop(key, None) is not None
 
     def exists(self, key: str) -> bool:
         return key in self.data_store

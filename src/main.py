@@ -1,4 +1,4 @@
-from utils.data_io.data_fetcher import YFinanceFetcher
+from utils.data_inbound.data_fetcher import YFinanceFetcher
 
 if __name__ == "__main__":
 
