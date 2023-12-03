@@ -196,6 +196,16 @@ class DataIOButler:
         key = storage_unit_identifier.generate_identifier(**kwargs)
         return self.adapter.delete_data(key)
 
+    def delete_dataframes_group(self, **kwargs) -> bool:
+        """
+        Delete a group of DataFrames from Redis using a dynamically selected key strategy.
+
+        Accepts keyword arguments to define the parameters for generating the storage key.
+        :return: True if deletion was successful, False otherwise.
+        """
+        storage_unit_identifier = self._select_key_strategy(**kwargs)
+        key = storage_unit_identifier.generate_identifier(**kwargs)
+        return self.adapter.delete_batch_data(key, 'hash_keys')
 
     # Add any additional data management methods as needed.
 
