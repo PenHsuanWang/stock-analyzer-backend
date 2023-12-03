@@ -10,18 +10,27 @@ The Python backend server of this project is engineered to serve frontend reques
 
 project structure
 ```text
-.
+src
 ├── __init__.py
 ├── core
 │   ├── __init__.py
 │   ├── analyzer
 │   │   ├── __init__.py
+│   │   ├── candlestick_pattern_analyzer.py
 │   │   ├── cross_asset_analyzer.py
 │   │   ├── daily_return_analyzer.py
 │   │   └── moving_average_analyzer.py
-│   └── manager
+│   ├── manager
+│   │   ├── __init__.py
+│   │   └── data_manager.py
+│   └── processor
 │       ├── __init__.py
-│       └── data_manager.py
+│       ├── data_convertor
+│       │   ├── __init__.py
+│       │   ├── preprocessor_base.py
+│       │   └── time_series_preprocessor.py
+│       ├── data_segment_extractor.py
+│       └── gaf_processor.py
 ├── main.py
 ├── run_server.py
 ├── server.py
@@ -31,6 +40,14 @@ project structure
 │   │   ├── __init__.py
 │   │   ├── base.py
 │   │   └── data_fetcher.py
+│   ├── database_adapters
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── minio_adapter.py
+│   │   └── redis_adapter.py
+│   ├── storage_identifier
+│   │   ├── __init__.py
+│   │   └── identifier_strategy.py
 │   └── store
 │       ├── __init__.py
 │       └── companies.py
@@ -40,12 +57,15 @@ project structure
     │   ├── __init__.py
     │   ├── data_fetcher_serving_app_router.py
     │   ├── data_manager_serving_app_router.py
-    │   └── stock_analysis_serving_app_router.py
+    │   ├── stock_analysis_serving_app_router.py
+    │   └── stock_analyzer_basic_serving_app_router.py
     └── serving_app
         ├── __init__.py
         ├── data_fetcher_serving_app.py
         ├── data_manager_serving_app.py
-        └── stock_analysis_serving_app.py
+        ├── stock_analysis_serving_app.py
+        ├── stock_analyzer_basic_serving_app.py
+        └── stock_data_transformation_serving_app.py
 ```
 
 ### 1. Core
@@ -82,9 +102,29 @@ The project structure distinctly separates computational and backend services, e
 
 3. **Cross-Asset Correlation Analysis (`cross_asset_analyzer.py`):** The function of this module is to analyze the price correlation between two or more assets. Cross-asset analysis can help investors determine the risk diversification strategy of an asset portfolio and identify potential arbitrage opportunities.
 
-### Backend Serving:
+---
 
-1. **Data Access Management (`core/manager/data_manager.py` and `webapp/data_manager_serving_app.py`):** The `data_manager.py` under `core` is responsible for data flow and access, ensuring that data can be smoothly extracted from external sources, stored, and correctly transferred between internal modules. Correspondingly, `data_manager_serving_app.py` under `webapp` acts as the Web API version of this module, allowing external services or frontend interfaces to interact directly with the data management module.
+## Backend Serving:
+
+### Data Access Management (`core/manager/data_manager.py` and `webapp/data_manager_serving_app.py`):** The `data_manager.py` under `core` is responsible for data flow and access, ensuring that data can be smoothly extracted from external sources, stored, and correctly transferred between internal modules. Correspondingly, `data_manager_serving_app.py` under `webapp` acts as the Web API version of this module, allowing external services or frontend interfaces to interact directly with the data management module.
+
+#### Batch Data Handling Capabilities
+
+In the latest development cycle, we've introduced three new functions in the `DataManagerApp` class, enhancing our backend's capability to handle batch data operations. These additions are crucial for dealing with large datasets efficiently and are particularly useful when operating on grouped stock data or when simultaneous operations on multiple data sets are required.
+
+1. **Save Dataframes Group**:
+   - The `save_dataframes_group` function allows for the storage of a group of Pandas DataFrames in the Redis database. This is particularly useful for handling batch operations where multiple datasets need to be stored simultaneously under a common group identifier.
+   - Usage Example: This function can be utilized to store a collection of stock data frames, each representing a different stock, under a single group identifier.
+
+2. **Get Dataframes Group**:
+   - The `get_dataframes_group` function enables the retrieval of a group of DataFrames, previously stored using the `save_dataframes_group` function. This allows for efficient access to batch data that has been grouped together under a single identifier.
+   - Usage Example: This can be used to fetch all stock data frames related to a specific group of stocks for batch processing or analysis.
+
+3. **Delete Dataframes Group**:
+   - The `delete_dataframes_group` function provides the capability to delete a group of DataFrames from the Redis database. This is vital for maintaining the integrity and relevance of the data in the database, allowing for the removal of outdated or unnecessary batch data.
+   - Usage Example: This function can be employed to remove old or irrelevant stock data collections from a specific group, ensuring that the database is not cluttered with stale data.
+
+These functions are encapsulated within the `DataManagerApp` class, ensuring thread safety and consistency in data operations. They represent a significant enhancement in our backend's ability to handle complex data operations, making our system more robust and versatile in dealing with various data management scenarios.
 
 
 ---
