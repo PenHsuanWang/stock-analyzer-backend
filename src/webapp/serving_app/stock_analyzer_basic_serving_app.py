@@ -74,20 +74,18 @@ class StockAnalyzerBasicServingApp:
         return patterns_df
 
     def fetch_and_do_full_basic_analysis_and_save(
-            self, stock_id: str, start_date: str, end_date: str,
+            self, prefix: str, stock_id: str, start_date: str, end_date: str,
             window_sizes: list[int]
     ) -> None:
         """
 
+        :param prefix:
         :param stock_id:
         :param start_date:
         :param end_date:
         :param window_sizes:
         :return:
         """
-
-        print("Calling new implemented full operation function")
-        breakpoint()
 
         try:
             # fetch data
@@ -107,7 +105,7 @@ class StockAnalyzerBasicServingApp:
             # save to redis
             self._data_io_butler.save_data(
                 data=analyzed_data,
-                prefix="analyzed_stock_data",
+                prefix=prefix,
                 stock_id=stock_id,
                 start_date=start_date,
                 end_date=end_date
@@ -144,7 +142,7 @@ class StockAnalyzerBasicServingApp:
         for stock_id in stock_ids:
             try:
                 stock_data = self._app_instance._data_io_butler.get_data(
-                    prefix="analyzed_stock_data",
+                    prefix="stock_data",
                     stock_id=stock_id,
                     start_date=start_date,
                     end_date=end_date

@@ -28,6 +28,7 @@ class CandlestickPatternAnalyzer:
             return stock_data
 
         try:
+            breakpoint()
             pattern_recognizer = PatternRecognizer(stock_data)
             pattern_data = pattern_recognizer.recognize_patterns()
             return pattern_data
