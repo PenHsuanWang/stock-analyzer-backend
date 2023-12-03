@@ -40,8 +40,13 @@ def compute_and_store_moving_average(
     :return: Confirmation message.
     """
     try:
-        app.fetch_and_do_full_basic_analysis_and_save(stock_id=request.stock_id, start_date=request.start_date,
-                                                      end_date=request.end_date, window_sizes=request.window_sizes)
+        app.fetch_and_do_full_basic_analysis_and_save(
+            prefix=request.prefix,
+            stock_id=request.stock_id,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            window_sizes=request.window_sizes
+        )
         return {"message": f"Complete to do the basic operation on {request.stock_id}. Saved into Redis"}
 
     except HTTPException as httpe:
