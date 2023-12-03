@@ -144,6 +144,56 @@ def test_save_empty_dataframes_group():
     assert saved_data == {}
 
 
+# Test _select_key_strategy for invalid parameters
+def test_select_key_strategy_invalid_params():
+    with pytest.raises(ValueError):
+        DataIOButler._select_key_strategy(invalid_param='value')
+
+
+# Test get_data when data not found
+def test_get_data_not_found_exception():
+    mock_adapter = MockDatabaseAdapter()
+    data_io_butler = DataIOButler(adapter=mock_adapter)
+
+    with pytest.raises(DataNotFoundError):
+        data_io_butler.get_data(prefix='non_existent', stock_id='stock_id', start_date='start_date', end_date='end_date')
+
+
+# Test delete_dataframes_group for non-existent data
+def test_delete_dataframes_group_nonexistent():
+    mock_adapter = MockDatabaseAdapter()
+    data_io_butler = DataIOButler(adapter=mock_adapter)
+
+    result = data_io_butler.delete_dataframes_group(group_id='nonexistent_group', start_date='2023-01-01', end_date='2023-01-31')
+    assert result is False
+
+
+# Test save_dataframes_group and get_dataframes_group for multiple dataframes
+def test_save_and_get_dataframes_group():
+    mock_adapter = MockDatabaseAdapter()
+    data_io_butler = DataIOButler(adapter=mock_adapter)
+
+    df1 = pd.DataFrame({'col1': [1, 2], 'col2': [3, 4]})
+    df2 = pd.DataFrame({'col1': [5, 6], 'col2': [7, 8]})
+    data_io_butler.save_dataframes_group(
+        group_id='group1',
+        start_date='2023-01-01',
+        end_date='2023-01-31',
+        group_df_list=[df1, df2]
+    )
+
+    retrieved_data = data_io_butler.get_dataframes_group(
+        group_id='group1',
+        start_date='2023-01-01',
+        end_date='2023-01-31'
+    )
+
+    pd.testing.assert_frame_equal(retrieved_data['stock:1'], df1)
+    pd.testing.assert_frame_equal(retrieved_data['stock:2'], df2)
+
+# Add more tests for other methods and edge cases as needed
+
+
 # def test_get_empty_dataframes_group():
 #     mock_adapter = MockDatabaseAdapter()
 #     data_io_butler = DataIOButler(adapter=mock_adapter)
