@@ -18,7 +18,7 @@ from src.core.analyzer.candlestick_pattern_analyzer import CandlestickPatternAna
 
 from src.core.manager.data_manager import DataIOButler, DataNotFoundError
 
-from src.utils.data_io.data_fetcher import YFinanceFetcher
+from src.utils.data_inbound.data_fetcher import YFinanceFetcher
 from src.utils.database_adapters.redis_adapter import RedisAdapter
 
 logger = logging.getLogger()
