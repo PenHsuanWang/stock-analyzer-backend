@@ -104,6 +104,11 @@ class StockAnalyzerBasicServingApp:
             analyzed_data = self._daily_return_analyzer.calculate_daily_return(analyzed_data)
             analyzed_data["Pattern"] = self._apply_candlestick_pattern_analyzer(analyzed_data)["Pattern"]  # extract the `Pattern` Column and added to analyzed_data
 
+            analyzed_data = self._advanced_financial_analyzer.apply_advanced_analysis(
+                analyzed_data, short_window=12, long_window=26, volume_window=20)
+
+            # TODO: provided advance analysis parameters pass in from outer scope
+
             # save to redis
             self._data_io_butler.save_data(
                 data=analyzed_data,
