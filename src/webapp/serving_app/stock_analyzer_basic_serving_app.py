@@ -16,6 +16,7 @@ from src.core.analyzer.moving_average_analyzer import MovingAverageAnalyzer
 from src.core.analyzer.daily_return_analyzer import DailyReturnAnalyzer
 from src.core.analyzer.cross_asset_analyzer import CrossAssetAnalyzer
 from src.core.analyzer.candlestick_pattern_analyzer import CandlestickPatternAnalyzer
+from src.core.analyzer.advance_financial_analyzer import AdvancedFinancialAnalyzer
 
 from src.core.manager.data_manager import DataIOButler, DataNotFoundError
 
@@ -39,6 +40,7 @@ class StockAnalyzerBasicServingApp:
                 cls._daily_return_analyzer = DailyReturnAnalyzer()
                 cls._app_instance._cross_asset_analyzer = CrossAssetAnalyzer()
                 cls._app_instance._candlestick_pattern_analyzer = CandlestickPatternAnalyzer()
+                cls._app_instance._advanced_financial_analyzer = AdvancedFinancialAnalyzer()
             return cls._app_instance
 
     def _fetch_data_and_get_as_dataframe(self, stock_id: str, start_date: str, end_date: str) -> pd.DataFrame:
@@ -102,6 +104,11 @@ class StockAnalyzerBasicServingApp:
             analyzed_data = self._daily_return_analyzer.calculate_daily_return(analyzed_data)
             analyzed_data["Pattern"] = self._apply_candlestick_pattern_analyzer(analyzed_data)["Pattern"]  # extract the `Pattern` Column and added to analyzed_data
 
+            analyzed_data = self._advanced_financial_analyzer.apply_advanced_analysis(
+                analyzed_data, short_window=12, long_window=26, volume_window=20)
+
+            # TODO: provided advance analysis parameters pass in from outer scope
+
             # save to redis
             self._data_io_butler.save_data(
                 data=analyzed_data,
@@ -123,6 +130,40 @@ class StockAnalyzerBasicServingApp:
 
         except Exception as e:
             error_message = f"An unexpected error occurred: {e}"
+            logger.exception(error_message)
+            raise HTTPException(status_code=500, detail=error_message)
+
+    def fetch_and_do_full_advanced_analysis_and_save(
+            self, prefix: str, stock_id: str, start_date: str, end_date: str,
+            short_window: int, long_window: int, volume_window: int
+    ) -> None:
+        """
+        Fetches stock data, performs advanced financial analysis, and stores it into Redis.
+
+        :param prefix: Prefix for Redis key.
+        :param stock_id: Stock identifier.
+        :param start_date: Start date for fetching data.
+        :param end_date: End date for fetching data.
+        :param short_window: Short window period for indicators.
+        :param long_window: Long window period for indicators.
+        :param volume_window: Volume window period for volume-related indicators.
+        """
+        try:
+            # fetch data
+            raw_df = self._fetch_data_and_get_as_dataframe(stock_id, start_date, end_date)
+            # perform advanced analysis
+            advanced_analyzed_data = self._advanced_financial_analyzer.apply_advanced_analysis(
+                raw_df, short_window, long_window, volume_window)
+            # save to redis
+            self._data_io_butler.save_data(
+                data=advanced_analyzed_data,
+                prefix=prefix,
+                stock_id=stock_id,
+                start_date=start_date,
+                end_date=end_date
+            )
+        except Exception as e:
+            error_message = f"An error occurred during advanced financial analysis: {e}"
             logger.exception(error_message)
             raise HTTPException(status_code=500, detail=error_message)
 

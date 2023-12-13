@@ -22,6 +22,16 @@ class ComputeCorrelationRequest(BaseModel):
     metric: str
 
 
+class AdvancedAnalysisRequest(BaseModel):
+    prefix: str
+    stock_id: str
+    start_date: str
+    end_date: str
+    short_window: int
+    long_window: int
+    volume_window: int
+
+
 # Define a dependency that will provide an instance of StockAnalysisServingApp
 def get_serving_app_dependency():
     return get_stock_analyzer_basic_serving_app()
@@ -81,6 +91,41 @@ def calculate_correlation(
             status_code=500,
             content={
                 "message": f"An error occurred while computing asset correlations. Error details: {str(e)}"
+            }
+        )
+
+
+@router.post("/stock_data/compute_advanced_analysis_and_store")
+def compute_and_store_advanced_analysis(
+    request: AdvancedAnalysisRequest = Body(...),
+    app: StockAnalyzerBasicServingApp = Depends(get_serving_app_dependency)
+):
+    """
+    Endpoint to compute advanced financial analysis and update Redis store.
+
+    :param request: Request body with stock details and analysis parameters.
+    :param app: Instance of StockAnalysisServingApp provided by Depends.
+    :return: Confirmation message.
+    """
+    try:
+        app.fetch_and_do_full_advanced_analysis_and_save(
+            prefix=request.prefix,
+            stock_id=request.stock_id,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            short_window=request.short_window,
+            long_window=request.long_window,
+            volume_window=request.volume_window
+        )
+        return {"message": f"Completed advanced financial analysis on {request.stock_id} and saved into Redis."}
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "message": f"An error occurred while performing advanced financial analysis. Error details: {str(e)}"
             }
         )
 
