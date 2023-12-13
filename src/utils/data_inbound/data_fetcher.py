@@ -6,7 +6,7 @@ import pandas as pd
 from datetime import datetime
 from requests.exceptions import HTTPError
 
-from src.utils.data_io.base import BaseDataFetcher
+from src.utils.data_inbound.base import BaseDataFetcher
 
 
 class YFinanceFetcher(BaseDataFetcher):

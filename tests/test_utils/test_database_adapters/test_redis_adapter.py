@@ -1,9 +1,13 @@
 # tests/test_redis_adapter.py
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock, call
-from src.utils.database_adapters.redis_adapter import RedisAdapter
 import json
+import redis
+
+from unittest.mock import Mock, patch, MagicMock, call
+from unittest.mock import create_autospec
+
+from src.utils.database_adapters.redis_adapter import RedisAdapter
 
 mock_pipeline = MagicMock()
 
@@ -84,7 +88,7 @@ def test_keys(redis_adapter):
 
 def test_save_batch_data(redis_adapter):
     # Mock the hmset and execute methods of the pipeline
-    mock_pipeline = Mock()
+    mock_pipeline = create_autospec(redis.client.Pipeline, instance=True)
     redis_adapter._redis_client.pipeline.return_value = mock_pipeline
 
     # Test data
@@ -102,9 +106,12 @@ def test_save_batch_data(redis_adapter):
 
 def test_get_batch_data(redis_adapter):
     # Mock the hkeys, hget, and execute methods of the pipeline
+    mock_pipeline = create_autospec(redis.client.Pipeline, instance=True)
     redis_adapter._redis_client.pipeline.return_value = mock_pipeline
-    redis_adapter._redis_client.hkeys = Mock(return_value=[b'field1', b'field2'])
-    redis_adapter._redis_client.hget = Mock(side_effect=[b'{"value": "value1"}', b'{"value": "value2"}'])
+
+    # set hkeys and hget return value
+    redis_adapter._redis_client.hkeys.return_value = [b'field1', b'field2']
+    redis_adapter._redis_client.hget.side_effect = [b'{"value": "value1"}', b'{"value": "value2"}']
 
     # Test data
     test_key = 'test-hash'

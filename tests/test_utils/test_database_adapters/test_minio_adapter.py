@@ -15,12 +15,12 @@ def minio_adapter():
         yield adapter
 
 
-def test_set_data(minio_adapter):
+def test_save_data(minio_adapter):
     # Mock the put_object method
     minio_adapter.client.put_object = Mock()
 
-    # Test set_data
-    minio_adapter.set_data('test-key', b'test-data', 'test-bucket')
+    # Test save_data
+    minio_adapter.save_data('test-key', b'test-data', 'test-bucket')
 
     # Assert put_object was called correctly
     minio_adapter.client.put_object.assert_called_with('test-bucket', 'test-key', ANY, length=9)
@@ -83,8 +83,8 @@ def test_set_empty_data(minio_adapter):
     # Mock the put_object method for empty data
     minio_adapter.client.put_object = Mock()
 
-    # Test set_data with empty data
-    minio_adapter.set_data('test-empty', b'', 'test-bucket')
+    # Test save_data with empty data
+    minio_adapter.save_data('test-empty', b'', 'test-bucket')
 
     # Assert put_object was called correctly with empty data
     minio_adapter.client.put_object.assert_called_with('test-bucket', 'test-empty', ANY, length=0)
@@ -104,9 +104,9 @@ def test_get_nonexistent_data(minio_adapter):
 
 
 def test_set_invalid_data_type(minio_adapter):
-    # Test set_data with invalid data type should raise ValueError
+    # Test save_data with invalid data type should raise ValueError
     with pytest.raises(ValueError):
-        minio_adapter.set_data('test-invalid', 12345, 'test-bucket')  # Invalid data type
+        minio_adapter.save_data('test-invalid', 12345, 'test-bucket')  # Invalid data type
 
 
 def test_operations_on_nonexistent_bucket(minio_adapter):
@@ -121,9 +121,9 @@ def test_operations_on_nonexistent_bucket(minio_adapter):
     minio_adapter.client.remove_object = Mock(side_effect=mock_s3error)
     minio_adapter.client.stat_object = Mock(side_effect=mock_s3error)
 
-    # Test set_data on a nonexistent bucket
+    # Test save_data on a nonexistent bucket
     with pytest.raises(ValueError):
-        minio_adapter.set_data(test_key, b'test-data', nonexistent_bucket)
+        minio_adapter.save_data(test_key, b'test-data', nonexistent_bucket)
 
     # Test get_data on a nonexistent bucket
     with pytest.raises(ValueError):

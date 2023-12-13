@@ -17,7 +17,7 @@ class MinIOAdapter(AbstractDatabaseAdapter):
         """
         self.client = Minio(endpoint, access_key=access_key, secret_key=secret_key, secure=secure)
 
-    def set_data(self, key: str, value, bucket: str):
+    def save_data(self, key: str, value, bucket: str):
         """
         Store data in MinIO bucket.
 
@@ -102,3 +102,13 @@ class MinIOAdapter(AbstractDatabaseAdapter):
             if e.code == 'NoSuchBucket':
                 raise ValueError(f"Bucket '{bucket}' does not exist")
             raise
+
+    def delete_batch_data(self, key: str, bucket: str) -> bool:
+        pass
+
+    def get_batch_data(self, key: str, bucket: str) -> dict:
+        pass
+
+    def save_batch_data(self, key: str, value: dict, bucket: str) -> bool:
+        pass
+
