@@ -13,10 +13,17 @@ class DataManagerApp:
     _app_lock = threading.Lock()
 
     def __new__(cls, *args, **kwargs):
+        try:
+            data_io_butler = kwargs["data_io_butler"]
+            if data_io_butler is None:
+                data_io_butler = DataIOButler(adapter=RedisAdapter())
+        except KeyError:
+            data_io_butler = DataIOButler(adapter=RedisAdapter())
         with cls._app_lock:
             if cls._app is None:
                 cls._app = super().__new__(cls)
-                cls._app._data_io_butler = DataIOButler(adapter=RedisAdapter())  # Initialize the DataIOButler here
+                # cls._app._data_io_butler = DataIOButler(adapter=RedisAdapter())  # Initialize the DataIOButler here
+                cls._app._data_io_butler = data_io_butler
             return cls._app
 
     @staticmethod
@@ -118,6 +125,8 @@ class DataManagerApp:
             return False
 
 
-def get_app():
-    app = DataManagerApp()
+def get_app(data_io_butler=None):
+    if data_io_butler is None:
+        data_io_butler = DataIOButler(adapter=RedisAdapter())
+    app = DataManagerApp(data_io_butler=data_io_butler)
     return app
