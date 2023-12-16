@@ -67,32 +67,24 @@ def test_fetch_data_and_get_as_dataframe_exception():
 
 
 # test fetch_and_do_full_ana_and_save success
-def test_fetch_and_do_full_ana_and_save_success(valid_stock_data):
+def test_fetch_and_do_full_basic_analysis_and_save_success(valid_stock_data):
     app = StockAnalyzerBasicServingApp()
     # Mock _fetch_data_and_get_as_dataframe to return valid stock data
     with patch.object(app, '_fetch_data_and_get_as_dataframe', return_value=valid_stock_data), \
          patch.object(app._data_io_butler, 'save_data') as mock_save:
-        app.fetch_and_do_full_ana_and_save('AAPL', '2023-01-01', '2023-01-31', [5, 10])
+        app.fetch_and_do_full_basic_analysis_and_save("stock_id", 'AAPL', '2023-01-01', '2023-01-31', [5, 10])
         mock_save.assert_called()
 
 
 # test fetch_and_do_full_ana_and_save with exception
-def test_fetch_and_do_full_ana_and_save_exception():
+def test_fetch_and_do_full_basic_analysis_and_save_exception():
     app = StockAnalyzerBasicServingApp()
     # Mock _fetch_data_and_get_as_dataframe to raise an exception
     with patch.object(app, '_fetch_data_and_get_as_dataframe', side_effect=Exception):
         with pytest.raises(HTTPException):
-            app.fetch_and_do_full_ana_and_save('AAPL', '2023-01-01', '2023-01-31', [5, 10])
+            app.fetch_and_do_full_basic_analysis_and_save("stock_id", 'AAPL', '2023-01-01', '2023-01-31', [5, 10])
 
 
-# test calculating_full_ana_and_saved_as_analyzed_prefix success complete
-def test_calculating_full_ana_and_saved_as_analyzed_prefix_success(valid_stock_data):
-    app = StockAnalyzerBasicServingApp()
-    # Mock get_data to return valid stock data and save_data for checking if it's called
-    with patch.object(app._data_io_butler, 'get_data', return_value=valid_stock_data), \
-         patch.object(app._data_io_butler, 'save_data') as mock_save:
-        app.calculating_full_ana_and_saved_as_analyzed_prefix('raw_stock_data', 'AAPL', '2023-01-01', '2023-01-31', [5, 10])
-        mock_save.assert_called()
 
 
 # test calculate_correlation success case
@@ -102,15 +94,6 @@ def test_calculate_correlation_success(valid_stock_data):
     with patch.object(app._data_io_butler, 'get_data', return_value=valid_stock_data):
         correlation_df = app.calculate_correlation(['AAPL', 'MSFT'], '2023-01-01', '2023-01-31', 'Close')
         assert isinstance(correlation_df, pd.DataFrame)
-
-
-# test analyze_candlestick_patterns success analysis
-def test_analyze_candlestick_patterns_success(valid_stock_data):
-    app = StockAnalyzerBasicServingApp()
-    # Mock get_data to return valid stock data
-    with patch.object(app._data_io_butler, 'get_data', return_value=valid_stock_data):
-        patterns_df = app.analyze_candlestick_patterns('AAPL', '2023-01-01', '2023-01-31')
-        assert 'Pattern' in patterns_df.columns
 
 
 # Sample stock data for testing
