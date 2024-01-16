@@ -1,11 +1,27 @@
 # webapp.data_manager_serving_app.py
-
+import os
 import threading
 
 import pandas as pd
 
 from src.core.manager.data_manager import DataIOButler
 from src.utils.database_adapters.redis_adapter import RedisAdapter
+
+
+class AdapterFactory:
+    @staticmethod
+    def create_adapter(adapter_type, **kwargs):
+        if adapter_type == "RedisAdapter":
+            host = kwargs.get('host', 'localhost')
+            port = kwargs.get('port', 6379)
+            db = kwargs.get('db', 0)
+            return RedisAdapter(
+                host=host,
+                port=port,
+                db=db
+            )
+        else:
+            raise ValueError(f"Unsupported adapter type: {adapter_type}")
 
 
 class DataManagerApp:
@@ -127,6 +143,12 @@ class DataManagerApp:
 
 def get_app(data_io_butler=None):
     if data_io_butler is None:
-        data_io_butler = DataIOButler(adapter=RedisAdapter())
+        adapter_type = os.getenv('ADAPTER_TYPE', 'RedisAdapter')
+        adapter_kwargs = {
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'port': int(os.getenv('DB_PORT', '6379')),
+            'db': int(os.getenv('DB_DB', '0')),
+        }
+        data_io_butler = DataIOButler(adapter=AdapterFactory.create_adapter(adapter_type, **adapter_kwargs))
     app = DataManagerApp(data_io_butler=data_io_butler)
     return app
