@@ -22,9 +22,25 @@ class AdvancedFinancialAnalyzer:
         :param volume_window: The volume window period for volume-related indicators.
         :return: DataFrame with new analysis columns.
         """
+
+        if not all(column in stock_data.columns for column in ["Open", "High", "Low", "Close", "Volume"]):
+            raise ValueError("Input Dataframe missing necessary column")
+
         indicator = AdvancedFinancialIndicator()
+
         try:
-            return indicator.apply_strategy(stock_data, short_window, long_window, volume_window)
+            stock_data['MACD'], stock_data["Signal_Line"], stock_data['MACD_Histogram'] = indicator.compute_macd(stock_data, short_window, long_window)
+            stock_data['Bollinger_Upper'], stock_data['Bollinger_Mid'], stock_data['bollinger_Lower'] = indicator.compute_bollinger_bands(stock_data, volume_window, column='Close')
+            stock_data['RSI'] = indicator.compute_rsi(stock_data, column='Close')
+
+            return stock_data
         except Exception as e:
             logger.error(f"Failed to apply advanced financial analysis: {e}")
             raise
+
+
+        # try:
+        #     return indicator.apply_strategy(stock_data, short_window, long_window, volume_window)
+        # except Exception as e:
+        #     logger.error(f"Failed to apply advanced financial analysis: {e}")
+        #     raise

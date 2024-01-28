@@ -50,8 +50,8 @@ class RedisAdapter(AbstractDatabaseAdapter):
                 if data_type == 'list':
                     pipe.lpush(key, *value)
                 elif data_type == 'hash':
-                    serialized_value = {field: json.dumps(val) for field, val in value.items()}
-                    pipe.hmset(key, serialized_value)
+                    for field, val in value.items():
+                        pipe.hset(key, field, json.dumps(val))
                 pipe.execute()
             except Exception:
                 return False

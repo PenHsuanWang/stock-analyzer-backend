@@ -5,6 +5,18 @@ from .preprocessor_base import PreprocessorBase
 
 
 class TimeSeriesPreprocessor(PreprocessorBase):
+    """
+    A preprocessor for transforming time series data.
+
+    This class extends PreprocessorBase and implements the transformation of time
+    series data into a format suitable for time series analysis or neural network
+    models. It focuses on creating overlapping windows from time series data,
+    which can be used for various time series forecasting models.
+
+    Attributes:
+        window_size (int): The size of the window used to create time series segments.
+    """
+
     def __init__(self, window_size: int):
         """
         Initialize the TimeSeriesPreprocessor.

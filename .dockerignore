@@ -1,0 +1,32 @@
+# Operating system files
+.DS_Store
+
+# Version control
+.git/
+
+# IDE specific files
+.idea/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Test outputs and caches
+.coverage
+.mypy_cache/
+.pytest_cache/
+
+# Virtual environment
+venv/
+
+# Development-specific dependencies
+requirements-dev.txt
+tox.ini
+.tox/
+
+# Miscellaneous files
+*.log
+
+# All files and directories that are not explicitly required for the production build
+examples/
+tests/

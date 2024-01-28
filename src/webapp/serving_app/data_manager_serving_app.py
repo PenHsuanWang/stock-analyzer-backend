@@ -1,5 +1,5 @@
 # webapp.data_manager_serving_app.py
-
+import os
 import threading
 
 import pandas as pd
@@ -8,15 +8,38 @@ from src.core.manager.data_manager import DataIOButler
 from src.utils.database_adapters.redis_adapter import RedisAdapter
 
 
+class AdapterFactory:
+    @staticmethod
+    def create_adapter(adapter_type, **kwargs):
+        if adapter_type == "RedisAdapter":
+            host = kwargs.get('host', 'localhost')
+            port = kwargs.get('port', 6379)
+            db = kwargs.get('db', 0)
+            return RedisAdapter(
+                host=host,
+                port=port,
+                db=db
+            )
+        else:
+            raise ValueError(f"Unsupported adapter type: {adapter_type}")
+
+
 class DataManagerApp:
     _app = None
     _app_lock = threading.Lock()
 
     def __new__(cls, *args, **kwargs):
+        try:
+            data_io_butler = kwargs["data_io_butler"]
+            if data_io_butler is None:
+                data_io_butler = DataIOButler(adapter=RedisAdapter())
+        except KeyError:
+            data_io_butler = DataIOButler(adapter=RedisAdapter())
         with cls._app_lock:
             if cls._app is None:
                 cls._app = super().__new__(cls)
-                cls._app._data_io_butler = DataIOButler(adapter=RedisAdapter())  # Initialize the DataIOButler here
+                # cls._app._data_io_butler = DataIOButler(adapter=RedisAdapter())  # Initialize the DataIOButler here
+                cls._app._data_io_butler = data_io_butler
             return cls._app
 
     @staticmethod
@@ -118,6 +141,14 @@ class DataManagerApp:
             return False
 
 
-def get_app():
-    app = DataManagerApp()
+def get_app(data_io_butler=None):
+    if data_io_butler is None:
+        adapter_type = os.getenv('ADAPTER_TYPE', 'RedisAdapter')
+        adapter_kwargs = {
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'port': int(os.getenv('DB_PORT', '6379')),
+            'db': int(os.getenv('DB_DB', '0')),
+        }
+        data_io_butler = DataIOButler(adapter=AdapterFactory.create_adapter(adapter_type, **adapter_kwargs))
+    app = DataManagerApp(data_io_butler=data_io_butler)
     return app
