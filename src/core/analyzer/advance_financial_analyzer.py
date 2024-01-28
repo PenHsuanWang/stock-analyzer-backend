@@ -29,7 +29,7 @@ class AdvancedFinancialAnalyzer:
         indicator = AdvancedFinancialIndicator()
 
         try:
-            stock_data['MACD'], stock_data["Signal_Line"] = indicator.compute_macd(stock_data, short_window, long_window)
+            stock_data['MACD'], stock_data["Signal_Line"], stock_data['MACD_Histogram'] = indicator.compute_macd(stock_data, short_window, long_window)
             stock_data['Bollinger_Upper'], stock_data['Bollinger_Mid'], stock_data['bollinger_Lower'] = indicator.compute_bollinger_bands(stock_data, volume_window, column='Close')
             stock_data['RSI'] = indicator.compute_rsi(stock_data, column='Close')
 
