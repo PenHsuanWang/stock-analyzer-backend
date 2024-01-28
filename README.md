@@ -8,6 +8,16 @@ The Python backend server of this project is engineered to serve frontend reques
 
 ## Modular Introduction
 
+### System Architecture
+
+Our system is organized into three primary modules, each serving a distinct purpose in the stock analysis process:
+
+1. **Core Module**: The backbone of the system, responsible for all core analytical computations and logic. It includes various analyzers for different technical analyses and the strategy pattern-based signal labeling system.
+
+2. **Utils Module**: Provides auxiliary tools and utilities that support the core functionalities, including data sourcing, formatting, and database management tools.
+
+3. **Webapp Module**: Serves as the interface for users to interact with the core functionalities. It transforms the analytical capabilities into accessible Web API endpoints, allowing users to perform stock analysis via HTTP requests.
+
 project structure
 ```text
 src
@@ -70,10 +80,11 @@ src
 
 ### 1. Core
 
-The `core` module is the heart of the project, focusing on all logic and calculations directly related to the `stockana` package. It mainly encompasses core operations of stock analysis, such as calculating the moving average. This module also ensures data flows efficiently and smoothly during the analysis process, utilizing management tools like `data_manager` to facilitate data storage and handling.
+The `core` module is the heart of the project, focusing on all logic and calculations directly related to the `stockana` package. It mainly encompasses core operations of stock analysis, such as calculating the moving average and labeling buy and sell signals based on various technical indicators. This module also ensures data flows efficiently and smoothly during the analysis process, utilizing management tools like `data_manager` to facilitate data storage and handling.
 
 #### Implementation Example Explanation:
-- `moving_average_analyzer.py` defines the `MovingAverageAnalyzer` class, primarily designed to fetch stock data from Redis, compute its moving average, and update such data in Redis. Additionally, this file offers a straightforward example showcasing how to employ this class to calculate the moving average of a specific stock.
+- `moving_average_analyzer.py` defines the `MovingAverageAnalyzer` class, primarily designed to fetch stock data from Redis, compute its moving average, and update such data in Redis.
+- `signal_labeler` directory contains the strategy pattern implementation for labeling trading signals on stock data. The `buy_and_sell_signal_labeling.py` script within this directory implements the `BuySellSignalLabeler` class, a concrete strategy for identifying buy and sell signals based on MACD and RSI indicators.
 
 ### 2. Utils
 
@@ -101,6 +112,9 @@ The project structure distinctly separates computational and backend services, e
 2. **Daily Return Calculation (`daily_return_analyzer.py`):** The primary function of this module is to compute the daily return for stocks or other assets. This is a crucial metric for investors evaluating asset performance and risk.
 
 3. **Cross-Asset Correlation Analysis (`cross_asset_analyzer.py`):** The function of this module is to analyze the price correlation between two or more assets. Cross-asset analysis can help investors determine the risk diversification strategy of an asset portfolio and identify potential arbitrage opportunities.
+
+4. **Buy and Sell Signal Labeling (`signal_labeler/buy_and_sell_signal_labeling.py`):**
+   - This module implements the `BuySellSignalLabeler` class, which is used to label buy and sell signals in stock data based on MACD and RSI indicators. It follows the strategy pattern, allowing for easy extension with new labeling strategies in the future.
 
 ---
 
@@ -157,12 +171,51 @@ When users send a request to this API endpoint, the request is processed through
 
 ### Conclusion
 
-This example demonstrates the amalgamation of `core` and `webapp` modules to offer a complete moving average computation functionality. It aptly separates the core computational logic from the Web API, rendering the overall design both clear and scalable.
+This update introduces a flexible and extensible approach to labeling trading signals, enhancing the stock analysis capabilities of the system. The implementation showcases the use of design patterns to ensure scalability and maintainability in financial data analysis.
 
 ---
 
-### Developer Notes:
+## Introduction to Software Architecture and Coding Practices
 
-Always ensure that you're familiar with the purpose and responsibilities of each package before diving in. Modularity has been emphasized to ensure that each section of the codebase can be understood, maintained, and tested independently.
+### Software Architecture Overview
+
+Our system is structured into three main modules, each with its own specific responsibilities and design principles. Understanding this modular architecture is key to navigating and contributing to the project effectively.
+
+#### Core Module
+
+- **Purpose**: The Core module is the backbone of our application, handling the primary logic and computation related to stock analysis.
+- **Components**:
+  - **Analyzers**: These classes (e.g., `MovingAverageAnalyzer`, `BuySellSignalLabeler`) perform the core computations, such as calculating technical indicators and labeling signals.
+  - **Managers**: The `DataManager` class is responsible for the flow and management of data within the system.
+- **Key Principles**: Emphasis on computational efficiency, accuracy, and maintainability. Utilizes design patterns like Strategy (for signal labeling) to ensure extensibility.
+
+#### Utils Module
+
+- **Purpose**: Provides auxiliary functionalities that support the Core module. This includes data handling, formatting, and external integrations.
+- **Components**: Classes and functions dedicated to data fetching, conversion, and database management.
+- **Key Principles**: Focus on reliability and scalability. Ensures that Core functions can seamlessly receive and process data.
+
+#### Webapp Module
+
+- **Purpose**: Transforms Core functionalities into Web API endpoints using the FastAPI framework.
+- **Components**: Includes router and serving app classes that define API routes and connect them to Core functionalities.
+- **Key Principles**: Emphasizes usability and accessibility. The API design aims to be intuitive and user-friendly.
+
+### Coding Guidelines
+
+To maintain code quality and consistency, we adhere to the following coding practices:
+
+- **Style Guide**: Follow PEP 8 for Python code styling. Ensure readability and clean code formatting.
+- **Documentation**: Write comprehensive docstrings for classes and methods. New functionalities should be well-documented with clear descriptions, parameters, and return types.
+- **Testing**: Prioritize writing tests for new features. Ensure that existing tests pass before pushing code changes.
+- **Code Reviews**: All contributions should be reviewed through pull requests. Engage in constructive code reviews to maintain code quality.
+- **Version Control**: Use Git for version control. Commit messages should be clear and descriptive.
+
+### Getting Started with Development
+
+1. **Setup**: Clone the repository and set up a development environment. Familiarize yourself with the project structure and dependencies.
+2. **First Steps**: Start by reviewing existing code to understand implementation patterns. Explore the `tests` directory to understand how functionalities are tested.
+3. **Contribution**: Pick up issues or tasks that match your skill level. Begin with smaller tasks to get accustomed to the codebase and workflow.
+4. **Ask Questions**: Don’t hesitate to ask for help or clarifications from the team. Collaboration is key to our project's success.
 
 ---
