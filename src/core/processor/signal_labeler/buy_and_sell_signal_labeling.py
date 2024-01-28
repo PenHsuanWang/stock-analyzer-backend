@@ -8,22 +8,28 @@ class BuySellSignalLabeler(BaseStrategyLabeler):
     """
     Concrete implementation of BaseStrategyLabeler for labeling buy and sell signals.
 
-    This class applies a specific strategy to label buy and sell signals in a stock dataset.
-    The strategy uses Moving Average Convergence Divergence (MACD) and Relative Strength Index (RSI)
-    to determine potential buying and selling points. A buy signal is generated when the MACD line
-    crosses above the Signal Line and the RSI is below 30, indicating an oversold condition.
-    Conversely, a sell signal is generated when the MACD line crosses below the Signal Line and
-    the RSI is above 70, indicating an overbought condition.
-
-    Attributes:
-        None
-
-    Methods:
-        apply(data: pd.DataFrame) -> pd.DataFrame:
-            Applies the buy and sell signal labeling strategy to the provided DataFrame.
-        _validate_input(data: pd.DataFrame):
-            Validates if the input DataFrame contains the necessary columns for the analysis.
+    This class allows configuration of RSI thresholds and column names for MACD, Signal Line, and RSI,
+    making it adaptable for different datasets or analysis strategies.
     """
+
+    def __init__(self, rsi_buy_threshold: float = 30.0, rsi_sell_threshold: float = 70.0,
+                 macd_column: str = 'MACD', signal_line_column: str = 'Signal_Line',
+                 rsi_column: str = 'RSI'):
+        """
+        Initialize the BuySellSignalLabeler with configurable parameters.
+
+        Parameters:
+        rsi_buy_threshold (float): The RSI threshold for triggering a buy signal.
+        rsi_sell_threshold (float): The RSI threshold for triggering a sell signal.
+        macd_column (str): The column name for MACD values.
+        signal_line_column (str): The column name for Signal Line values.
+        rsi_column (str): The column name for RSI values.
+        """
+        self.rsi_buy_threshold = rsi_buy_threshold
+        self.rsi_sell_threshold = rsi_sell_threshold
+        self.macd_column = macd_column
+        self.signal_line_column = signal_line_column
+        self.rsi_column = rsi_column
 
     def apply(self, data: pd.DataFrame) -> pd.DataFrame:
         """
@@ -48,10 +54,10 @@ class BuySellSignalLabeler(BaseStrategyLabeler):
         buy_signals, sell_signals = [], []
 
         for i in range(len(data)):
-            if data['MACD'][i] > data['Signal_Line'][i] and data['RSI'][i] < 30:
+            if data[self.macd_column][i] > data[self.signal_line_column][i] and data[self.rsi_column][i] < self.rsi_buy_threshold:
                 buy_signals.append(True)
                 sell_signals.append(False)
-            elif data['MACD'][i] < data['Signal_Line'][i] and data['RSI'][i] > 70:
+            elif data[self.macd_column][i] < data[self.signal_line_column][i] and data[self.rsi_column][i] > self.rsi_sell_threshold:
                 sell_signals.append(True)
                 buy_signals.append(False)
             else:
