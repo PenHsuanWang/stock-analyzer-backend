@@ -1,4 +1,4 @@
-# buy_and_sell_signal_labeling.py
+# rsi_dominate_buy_sell_labeler.py
 
 import pandas as pd
 from src.core.processor.signal_labeler.base_strategy_labeler import BaseStrategyLabeler
