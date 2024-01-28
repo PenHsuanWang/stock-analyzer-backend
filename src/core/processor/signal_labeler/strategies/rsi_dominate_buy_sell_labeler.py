@@ -4,7 +4,7 @@ import pandas as pd
 from src.core.processor.signal_labeler.base_strategy_labeler import BaseStrategyLabeler
 
 
-class BuySellSignalLabeler(BaseStrategyLabeler):
+class RsiDominateLabeler(BaseStrategyLabeler):
     """
     Concrete implementation of BaseStrategyLabeler for labeling buy and sell signals.
 
@@ -16,7 +16,7 @@ class BuySellSignalLabeler(BaseStrategyLabeler):
                  macd_column: str = 'MACD', signal_line_column: str = 'Signal_Line',
                  rsi_column: str = 'RSI'):
         """
-        Initialize the BuySellSignalLabeler with configurable parameters.
+        Initialize the RsiDominateLabeler with configurable parameters.
 
         Parameters:
         rsi_buy_threshold (float): The RSI threshold for triggering a buy signal.
@@ -98,10 +98,10 @@ if __name__ == "__main__":
     # Creating a DataFrame from the sample data
     df = pd.DataFrame(data)
 
-    # Creating an instance of BuySellSignalLabeler
-    labeler = BuySellSignalLabeler()
+    # Creating an instance of RsiDominateLabeler
+    labeler = RsiDominateLabeler()
 
-    # Applying the BuySellSignalLabeler
+    # Applying the RsiDominateLabeler
     labeled_data = labeler.apply(df)
 
     # Displaying the original data with buy and sell signals
