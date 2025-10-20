@@ -31,8 +31,11 @@ def fetch_data_and_get_as_dataframe(request: FetchStockDataRequest = Body(...),
             content={"message": f"An error occurred: {str(re)}. Please check the input parameters."}
         )
 
+    # Convert Date column to ISO format string for better frontend compatibility
+    if 'Date' in dataframe.columns:
+        dataframe['Date'] = dataframe['Date'].dt.strftime('%Y-%m-%d')
+    
     # Convert DataFrame to JSON for response.
-    # This approach might not be efficient for very large DataFrames.
     return dataframe.to_json(orient="records")
 
 

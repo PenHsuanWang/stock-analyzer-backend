@@ -1,7 +1,7 @@
 # moving_average_crossover_labeler.py
 
 import pandas as pd
-from src.core.processor.signal_labeler.base_strategy_labeler import BaseStrategyLabeler
+from core.processor.signal_labeler.base_strategy_labeler import BaseStrategyLabeler
 
 class MovingAverageCrossoverLabeler(BaseStrategyLabeler):
     """

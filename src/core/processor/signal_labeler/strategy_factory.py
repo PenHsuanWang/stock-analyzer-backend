@@ -1,9 +1,9 @@
 # strategy_factory.py
 
-from src.core.processor.signal_labeler.strategies import *
-from src.core.processor.signal_labeler.strategies.bollinger_bands_buy_sell_labeler import BollingerBandsLabeler
-from src.core.processor.signal_labeler.strategies.rsi_dominate_buy_sell_labeler import RsiDominateLabeler
-from src.core.processor.signal_labeler.strategies.ma_crossover_buy_sell_labeler import MovingAverageCrossoverLabeler
+from core.processor.signal_labeler.strategies import *
+from core.processor.signal_labeler.strategies.bollinger_bands_buy_sell_labeler import BollingerBandsLabeler
+from core.processor.signal_labeler.strategies.rsi_dominate_buy_sell_labeler import RsiDominateLabeler
+from core.processor.signal_labeler.strategies.ma_crossover_buy_sell_labeler import MovingAverageCrossoverLabeler
 
 
 class StrategyFactory:

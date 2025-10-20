@@ -3,7 +3,7 @@
 import redis
 import json
 
-from src.utils.database_adapters.base import AbstractDatabaseAdapter
+from utils.database_adapters.base import AbstractDatabaseAdapter
 
 
 class RedisAdapter(AbstractDatabaseAdapter):

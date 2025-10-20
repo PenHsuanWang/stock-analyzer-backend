@@ -3,7 +3,7 @@
 from minio import Minio
 from minio.error import S3Error
 from io import BytesIO
-from src.utils.database_adapters.base import AbstractDatabaseAdapter
+from utils.database_adapters.base import AbstractDatabaseAdapter
 
 
 class MinIOAdapter(AbstractDatabaseAdapter):
