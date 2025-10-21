@@ -1,0 +1,143 @@
+"""
+Job executor for running scheduled data fetch operations.
+"""
+import logging
+import threading
+from datetime import datetime, date
+from typing import Optional
+
+from utils.data_inbound.data_fetcher import YFinanceFetcher
+from core.manager.data_manager import DataIOButler
+from utils.database_adapters.redis_adapter import RedisAdapter
+from core.scheduler.job_definition import ScheduledJob, JobStatus
+
+logger = logging.getLogger(__name__)
+
+
+class JobExecutionError(Exception):
+    """Exception raised when job execution fails."""
+    pass
+
+
+class JobExecutor:
+    """
+    Executes scheduled jobs by fetching stock data and storing it.
+    Wraps existing components without modifying them.
+    """
+    
+    def __init__(self):
+        """Initialize job executor with existing components."""
+        self._data_fetcher = YFinanceFetcher()
+        self._data_butler = DataIOButler(adapter=RedisAdapter())
+        self._execution_lock = threading.Lock()
+    
+    def execute_job(self, job: ScheduledJob) -> dict:
+        """
+        Execute a scheduled job.
+        
+        Args:
+            job: ScheduledJob instance to execute
+            
+        Returns:
+            dict: Execution result with status and details
+        """
+        execution_result = {
+            "job_id": job.job_id,
+            "job_name": job.name,
+            "start_time": datetime.now().isoformat(),
+            "status": "success",
+            "fetched_stocks": [],
+            "failed_stocks": [],
+            "errors": []
+        }
+        
+        logger.info(f"Starting execution of job: {job.name} ({job.job_id})")
+        
+        # Calculate date range
+        end_date = job.end_date or date.today().isoformat()
+        start_date = job.start_date or self._calculate_default_start_date()
+        
+        # Fetch and store data for each stock
+        for stock_id in job.stock_ids:
+            try:
+                self._fetch_and_store_single_stock(
+                    stock_id=stock_id,
+                    start_date=start_date,
+                    end_date=end_date,
+                    prefix=job.prefix
+                )
+                execution_result["fetched_stocks"].append(stock_id)
+                logger.info(f"Successfully fetched and stored data for {stock_id}")
+                
+            except Exception as e:
+                error_msg = f"Failed to fetch {stock_id}: {str(e)}"
+                logger.error(error_msg)
+                execution_result["failed_stocks"].append(stock_id)
+                execution_result["errors"].append(error_msg)
+        
+        # Determine overall status
+        if execution_result["failed_stocks"]:
+            if execution_result["fetched_stocks"]:
+                execution_result["status"] = "partial_success"
+            else:
+                execution_result["status"] = "failed"
+        
+        execution_result["end_time"] = datetime.now().isoformat()
+        
+        logger.info(
+            f"Completed job: {job.name}. "
+            f"Success: {len(execution_result['fetched_stocks'])}, "
+            f"Failed: {len(execution_result['failed_stocks'])}"
+        )
+        
+        return execution_result
+    
+    def _fetch_and_store_single_stock(
+        self,
+        stock_id: str,
+        start_date: str,
+        end_date: str,
+        prefix: str
+    ) -> None:
+        """
+        Fetch and store data for a single stock.
+        Uses existing components without modification.
+        
+        Args:
+            stock_id: Stock symbol to fetch
+            start_date: Start date for data range
+            end_date: End date for data range
+            prefix: Redis key prefix
+        """
+        # Fetch data using existing YFinanceFetcher
+        self._data_fetcher.fetch_from_source(
+            stock_id=stock_id,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        df = self._data_fetcher.get_as_dataframe()
+        
+        if df.empty:
+            raise JobExecutionError(f"No data returned for {stock_id}")
+        
+        # Store data using existing DataIOButler
+        self._data_butler.save_data(
+            data=df,
+            prefix=prefix,
+            stock_id=stock_id,
+            start_date=start_date,
+            end_date=end_date
+        )
+    
+    @staticmethod
+    def _calculate_default_start_date() -> str:
+        """
+        Calculate default start date (30 days ago).
+        
+        Returns:
+            Date string in YYYY-MM-DD format
+        """
+        from datetime import timedelta
+        default_start = date.today() - timedelta(days=30)
+        return default_start.isoformat()
