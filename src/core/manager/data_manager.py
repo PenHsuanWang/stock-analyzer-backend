@@ -9,9 +9,9 @@ import numpy as np
 from io import StringIO
 from threading import Lock
 
-from src.utils.database_adapters.redis_adapter import RedisAdapter
-from src.utils.database_adapters.base import AbstractDatabaseAdapter
-from src.utils.storage_identifier import identifier_strategy
+from utils.database_adapters.redis_adapter import RedisAdapter
+from utils.database_adapters.base import AbstractDatabaseAdapter
+from utils.storage_identifier import identifier_strategy
 
 
 class DataNotFoundError(Exception):
@@ -22,15 +22,10 @@ class DataNotFoundError(Exception):
 class DataIOButler:
     def __init__(self, adapter: AbstractDatabaseAdapter):
         """
-        Initialize the data manager with a connection to the Redis server.
+        Initialize the data manager with a database adapter.
 
-        :param host: Redis server hostname.
-        :param port: Redis server port.
-        :param db: Redis database number.
+        :param adapter: Database adapter implementing AbstractDatabaseAdapter interface.
         """
-        # self._redis_client = redis.StrictRedis(
-        #     connection_pool=redis.ConnectionPool(host=host, port=port, db=db)
-        # )
         self.adapter = adapter
         self._lock = Lock()
 
@@ -153,7 +148,7 @@ class DataIOButler:
             raise DataNotFoundError("No data found for the given parameters in the database.")
 
         df = pd.read_json(StringIO(data_json_str), orient="records")
-        if df.select_dtypes(include=[np.number]).applymap(np.isinf).any().any():
+        if df.select_dtypes(include=[np.number]).map(np.isinf).any().any():
             df = df.replace([np.inf, -np.inf], np.nan)
 
         return df
@@ -168,17 +163,11 @@ class DataIOButler:
         :param end_date: End date for the stock data.
         :param updated_dataframe: The updated dataframe.
         """
-        # key = self._generate_major_stock_key(**kwargs)
         storage_unit_identifier = self._select_key_strategy(**kwargs)
         key = storage_unit_identifier.generate_identifier(**kwargs)
-        # Convert DataFrame to JSON and store it in Redis
         data_json = updated_dataframe.to_json(orient="records")
 
-        # Start a Redis transaction
-        with self._lock:  # Ensure thread safety with a lock
-
-            # with self._redis_client.pipeline() as pipe:
-            #     self._with_retries(5, self._update_redis_data, pipe, key, data_json)
+        with self._lock:
             self.adapter.save_data(key, data_json)
 
     def delete_data(self, *args, **kwargs) -> bool:

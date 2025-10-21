@@ -6,7 +6,7 @@ import pandas as pd
 from datetime import datetime
 from requests.exceptions import HTTPError
 
-from src.utils.data_inbound.base import BaseDataFetcher
+from utils.data_inbound.base import BaseDataFetcher
 
 
 class YFinanceFetcher(BaseDataFetcher):
@@ -74,7 +74,14 @@ class YFinanceFetcher(BaseDataFetcher):
             print("Warning: self._fetched_data is not empty, "
                   "please `get_as_dataframe` to get the temporary data first, ")
         else:
-            self._fetched_data = yf.download(stock_id, start_date, end_date)
+            self._fetched_data = yf.download(stock_id, start_date, end_date, auto_adjust=True)
+            
+            # Flatten MultiIndex columns if present (when downloading single stock)
+            if isinstance(self._fetched_data.columns, pd.MultiIndex):
+                self._fetched_data.columns = self._fetched_data.columns.get_level_values(0)
+            
+            # Reset index to make Date a column
+            self._fetched_data = self._fetched_data.reset_index()
 
     def get_as_dataframe(self, *args, **kwargs) -> pd.DataFrame:
         """

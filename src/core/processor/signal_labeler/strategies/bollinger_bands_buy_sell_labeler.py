@@ -2,7 +2,7 @@
 
 import pandas as pd
 import numpy as np
-from src.core.processor.signal_labeler.base_strategy_labeler import BaseStrategyLabeler
+from core.processor.signal_labeler.base_strategy_labeler import BaseStrategyLabeler
 
 class BollingerBandsLabeler(BaseStrategyLabeler):
     """

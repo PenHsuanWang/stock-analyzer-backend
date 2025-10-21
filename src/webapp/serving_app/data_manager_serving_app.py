@@ -4,8 +4,8 @@ import threading
 
 import pandas as pd
 
-from src.core.manager.data_manager import DataIOButler
-from src.utils.database_adapters.redis_adapter import RedisAdapter
+from core.manager.data_manager import DataIOButler
+from utils.database_adapters.redis_adapter import RedisAdapter
 
 
 class AdapterFactory:

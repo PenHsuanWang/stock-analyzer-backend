@@ -1,7 +1,7 @@
 # rsi_dominate_buy_sell_labeler.py
 
 import pandas as pd
-from src.core.processor.signal_labeler.base_strategy_labeler import BaseStrategyLabeler
+from core.processor.signal_labeler.base_strategy_labeler import BaseStrategyLabeler
 
 
 class RsiDominateLabeler(BaseStrategyLabeler):

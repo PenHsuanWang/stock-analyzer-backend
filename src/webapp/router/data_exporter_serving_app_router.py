@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 import requests
 from pydantic import BaseModel
 
-from src.webapp.serving_app.data_exporter_serving_app import DataExporterApp, get_app
+from webapp.serving_app.data_exporter_serving_app import DataExporterApp, get_app
 
 router = APIRouter()
 
