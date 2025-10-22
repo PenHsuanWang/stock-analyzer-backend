@@ -50,6 +50,7 @@ class SchedulerServingApp:
         schedule_time: str = "17:00",
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
+        duration_days: Optional[int] = None,
         prefix: str = "scheduled_stock_data"
     ) -> str:
         """
@@ -61,6 +62,7 @@ class SchedulerServingApp:
             schedule_time: Time to run daily (HH:MM format)
             start_date: Optional start date for data fetching
             end_date: Optional end date for data fetching
+            duration_days: Optional sliding window duration in days (overrides start_date)
             prefix: Redis key prefix
             
         Returns:
@@ -72,6 +74,7 @@ class SchedulerServingApp:
             schedule_time=schedule_time,
             start_date=start_date,
             end_date=end_date,
+            duration_days=duration_days,
             prefix=prefix
         )
         
@@ -98,6 +101,7 @@ class SchedulerServingApp:
         schedule_time: Optional[str] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
+        duration_days: Optional[int] = None,
         is_active: Optional[bool] = None
     ) -> bool:
         """
@@ -110,6 +114,7 @@ class SchedulerServingApp:
             schedule_time: New schedule time (optional)
             start_date: New start date (optional)
             end_date: New end date (optional)
+            duration_days: New sliding window duration (optional)
             is_active: New active status (optional)
             
         Returns:
@@ -130,6 +135,8 @@ class SchedulerServingApp:
             job.start_date = start_date
         if end_date is not None:
             job.end_date = end_date
+        if duration_days is not None:
+            job.duration_days = duration_days
         if is_active is not None:
             job.is_active = is_active
         

@@ -53,9 +53,15 @@ class JobExecutor:
         
         logger.info(f"Starting execution of job: {job.name} ({job.job_id})")
         
-        # Calculate date range
+        # Calculate date range with sliding window support
         end_date = job.end_date or date.today().isoformat()
-        start_date = job.start_date or self._calculate_default_start_date()
+        
+        # If duration_days is set, calculate start_date as a sliding window
+        if job.duration_days is not None:
+            start_date = self._calculate_sliding_start_date(job.duration_days)
+            logger.info(f"Using sliding window: {job.duration_days} days (from {start_date} to {end_date})")
+        else:
+            start_date = job.start_date or self._calculate_default_start_date()
         
         # Fetch and store data for each stock
         for stock_id in job.stock_ids:
@@ -141,3 +147,18 @@ class JobExecutor:
         from datetime import timedelta
         default_start = date.today() - timedelta(days=30)
         return default_start.isoformat()
+    
+    @staticmethod
+    def _calculate_sliding_start_date(duration_days: int) -> str:
+        """
+        Calculate start date based on sliding window duration.
+        
+        Args:
+            duration_days: Number of days to go back from today
+            
+        Returns:
+            Date string in YYYY-MM-DD format
+        """
+        from datetime import timedelta
+        sliding_start = date.today() - timedelta(days=duration_days)
+        return sliding_start.isoformat()

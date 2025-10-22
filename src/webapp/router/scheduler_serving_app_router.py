@@ -22,6 +22,7 @@ class CreateJobRequest(BaseModel):
     schedule_time: str = "17:00"
     start_date: Optional[str] = None
     end_date: Optional[str] = None
+    duration_days: Optional[int] = None
     prefix: str = "scheduled_stock_data"
     
     @validator('schedule_time')
@@ -37,6 +38,13 @@ class CreateJobRequest(BaseModel):
         if not v:
             raise ValueError('At least one stock ID is required')
         return v
+    
+    @validator('duration_days')
+    def validate_duration_days(cls, v):
+        """Validate duration_days."""
+        if v is not None and v <= 0:
+            raise ValueError('duration_days must be a positive integer')
+        return v
 
 
 class UpdateJobRequest(BaseModel):
@@ -46,6 +54,7 @@ class UpdateJobRequest(BaseModel):
     schedule_time: Optional[str] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
+    duration_days: Optional[int] = None
     is_active: Optional[bool] = None
 
 
@@ -72,6 +81,10 @@ def create_job(
     Create a new scheduled job.
     
     The job will automatically run daily at the specified time.
+    
+    If duration_days is set, it creates a sliding time window that fetches
+    data from (today - duration_days) to today on each run.
+    This overrides start_date if both are provided.
     """
     try:
         job_id = app.create_job(
@@ -80,6 +93,7 @@ def create_job(
             schedule_time=request.schedule_time,
             start_date=request.start_date,
             end_date=request.end_date,
+            duration_days=request.duration_days,
             prefix=request.prefix
         )
         return {
@@ -130,6 +144,7 @@ def update_job(
         schedule_time=request.schedule_time,
         start_date=request.start_date,
         end_date=request.end_date,
+        duration_days=request.duration_days,
         is_active=request.is_active
     )
     

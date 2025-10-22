@@ -34,6 +34,7 @@ class ScheduledJob:
         status: Current status of the job
         start_date: Start date for data fetching (optional)
         end_date: End date for data fetching (default: today)
+        duration_days: Number of days to fetch from today (sliding window, optional)
         prefix: Redis key prefix for storing data
     """
     
@@ -48,6 +49,7 @@ class ScheduledJob:
     status: JobStatus = JobStatus.PENDING
     start_date: Optional[str] = None
     end_date: Optional[str] = None
+    duration_days: Optional[int] = None
     prefix: str = "scheduled_stock_data"
     
     def validate(self) -> bool:
@@ -58,6 +60,8 @@ class ScheduledJob:
             raise ValueError("At least one stock ID is required")
         if not self._validate_time_format(self.schedule_time):
             raise ValueError("Invalid schedule_time format. Use HH:MM")
+        if self.duration_days is not None and self.duration_days <= 0:
+            raise ValueError("duration_days must be a positive integer")
         return True
     
     @staticmethod
@@ -83,6 +87,7 @@ class ScheduledJob:
             "status": self.status.value,
             "start_date": self.start_date,
             "end_date": self.end_date,
+            "duration_days": self.duration_days,
             "prefix": self.prefix
         }
     
@@ -101,5 +106,6 @@ class ScheduledJob:
             status=JobStatus(data.get("status", "pending")),
             start_date=data.get("start_date"),
             end_date=data.get("end_date"),
+            duration_days=data.get("duration_days"),
             prefix=data.get("prefix", "scheduled_stock_data")
         )
