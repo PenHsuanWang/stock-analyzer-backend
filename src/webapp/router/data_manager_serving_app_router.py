@@ -2,7 +2,9 @@
 import pandas as pd
 from fastapi import APIRouter, Depends, Body, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
+from enum import Enum
+from datetime import datetime, timezone, timedelta
 
 from webapp.serving_app.data_manager_serving_app import DataManagerApp, get_app
 
@@ -36,6 +38,40 @@ class GroupDataRequest(BaseModel):
 
 class SaveGroupDataRequest(GroupDataRequest):
     group_df_list: Optional[List[List[Dict]]] = Field(None, description="List of lists of dataframes in dict format")
+
+
+class SourceTypeFilter(str, Enum):
+    scheduled_job = "scheduled_job"
+    manual_fetch = "manual_fetch"
+    all = "all"
+
+
+class ListDatasetsRequest(BaseModel):
+    source_type: SourceTypeFilter = SourceTypeFilter.all
+    job_id: Optional[str] = None
+    stock_ids: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+    fresh_only: bool = False
+
+
+class DatasetSummary(BaseModel):
+    key: str
+    stock_id: str
+    start_date: str
+    end_date: str
+    record_count: int
+    metadata: Dict[str, Any]
+
+
+class ListDatasetsResponse(BaseModel):
+    datasets: List[DatasetSummary]
+    total_count: int
+    filtered_count: int
+
+
+class DataWithMetadataResponse(BaseModel):
+    data: List[Dict[str, Any]]
+    metadata: Dict[str, Any]
 
 @router.post("/stock_data/get_all_keys")
 def get_all_data_keys(request: GetAllKeyWithPrefix = Body(...), app: DataManagerApp = Depends(get_app)):
@@ -132,6 +168,108 @@ def delete_dataframes_group(group_id: str, start_date: str, end_date: str, app: 
             end_date=end_date
         )
         return {"success": success}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/stock_data/get_data_with_metadata", response_model=DataWithMetadataResponse)
+def get_data_with_metadata(request: GetDataRequest = Body(...), app: DataManagerApp = Depends(get_app)):
+    """
+    Get stock data with metadata.
+    
+    Returns both the data array and metadata object.
+    Handles backward compatibility with old data format.
+    """
+    try:
+        result = app.get_stock_data_with_metadata(
+            prefix=request.prefix,
+            stock_id=request.stock_id,
+            start_date=request.start_date,
+            end_date=request.end_date
+        )
+        
+        # Convert DataFrame to dict for response
+        data_df = result["data"]
+        data_df = data_df.round(decimals=4)
+        data_df = data_df.fillna('null')
+        
+        return {
+            "data": data_df.to_dict(orient="records"),
+            "metadata": result["metadata"]
+        }
+    
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "not found" in error_msg or "no data" in error_msg:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No data found for {request.stock_id} from {request.start_date} to {request.end_date}"
+            )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/stock_data/list_datasets", response_model=ListDatasetsResponse)
+def list_datasets(request: ListDatasetsRequest = Body(...), app: DataManagerApp = Depends(get_app)):
+    """
+    List all datasets with optional filtering.
+    
+    Filters:
+    - source_type: scheduled_job, manual_fetch, or all
+    - job_id: specific job ID
+    - stock_ids: list of stock symbols
+    - tags: list of tags (AND logic)
+    - fresh_only: only data updated in last 24h
+    """
+    try:
+        # Get all datasets
+        all_datasets = app.list_all_datasets()
+        
+        # Apply filters
+        filtered = all_datasets
+        
+        # Filter by source type
+        if request.source_type != SourceTypeFilter.all:
+            filtered = [
+                ds for ds in filtered 
+                if ds["metadata"].get("source_type") == request.source_type.value
+            ]
+        
+        # Filter by job_id
+        if request.job_id:
+            filtered = [
+                ds for ds in filtered 
+                if ds["metadata"].get("job_id") == request.job_id
+            ]
+        
+        # Filter by stock_ids
+        if request.stock_ids:
+            filtered = [
+                ds for ds in filtered 
+                if ds["stock_id"] in request.stock_ids
+            ]
+        
+        # Filter by tags (AND logic - must have all tags)
+        if request.tags:
+            filtered = [
+                ds for ds in filtered 
+                if all(tag in ds["metadata"].get("tags", []) for tag in request.tags)
+            ]
+        
+        # Filter by freshness (last 24 hours)
+        if request.fresh_only:
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+            filtered = [
+                ds for ds in filtered 
+                if ds["metadata"].get("updated_at") and 
+                   datetime.fromisoformat(ds["metadata"]["updated_at"].replace('Z', '+00:00')) > cutoff
+            ]
+        
+        return {
+            "datasets": filtered,
+            "total_count": len(all_datasets),
+            "filtered_count": len(filtered)
+        }
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

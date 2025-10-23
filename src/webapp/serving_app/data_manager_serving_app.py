@@ -139,6 +139,36 @@ class DataManagerApp:
         except Exception as e:
             print(e)
             return False
+    
+    @staticmethod
+    def get_stock_data_with_metadata(prefix: str, stock_id: str, start_date: str, end_date: str) -> dict:
+        """
+        Get stock data with metadata.
+        
+        Returns:
+            Dictionary with 'data' (DataFrame) and 'metadata' keys
+        """
+        if not all([prefix, stock_id, start_date, end_date]):
+            raise ValueError("Missing required parameters")
+        
+        return DataManagerApp()._data_io_butler.get_data_with_metadata(
+            prefix=prefix,
+            stock_id=stock_id,
+            start_date=start_date,
+            end_date=end_date
+        )
+    
+    @staticmethod
+    def list_all_datasets(prefix_pattern: str = "stock_data:*") -> list:
+        """
+        List all datasets with their metadata.
+        
+        Returns:
+            List of dataset summaries
+        """
+        return DataManagerApp()._data_io_butler.list_all_datasets(
+            prefix_pattern=prefix_pattern
+        )
 
 
 def get_app(data_io_butler=None):

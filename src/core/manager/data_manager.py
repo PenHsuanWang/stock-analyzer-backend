@@ -6,12 +6,15 @@ This includes operations like checking data, getting data, and deleting data.
 import redis
 import pandas as pd
 import numpy as np
+import json
 from io import StringIO
 from threading import Lock
+from typing import Optional, Dict, Any
 
 from utils.database_adapters.redis_adapter import RedisAdapter
 from utils.database_adapters.base import AbstractDatabaseAdapter
 from utils.storage_identifier import identifier_strategy
+from core.services.metadata_service import MetadataService
 
 
 class DataNotFoundError(Exception):
@@ -68,12 +71,26 @@ class DataIOButler:
         :param start_date: Start date for the stock data.
         :param end_date: End date for the stock data.
         :param data: The dataframe containing the stock data.
+        :param metadata: Optional metadata dictionary
         """
-        # key = self._generate_major_stock_key(prefix, stock_id, start_date, end_date)
+        # Extract metadata if provided
+        metadata = kwargs.pop('metadata', None)
+        
         storage_unit_identifier = self._select_key_strategy(**kwargs)
         key = storage_unit_identifier.generate_identifier(**kwargs)
-
-        self.adapter.save_data(key, data.to_json(orient="records"))
+        
+        # Wrap data with metadata
+        data_json = data.to_json(orient="records")
+        if metadata is not None:
+            # New format: wrap with metadata
+            data_with_metadata = MetadataService.wrap_data_with_metadata(
+                data=json.loads(data_json),
+                metadata=metadata
+            )
+            self.adapter.save_data(key, json.dumps(data_with_metadata))
+        else:
+            # Legacy format: save raw data
+            self.adapter.save_data(key, data_json)
 
     def save_dataframes_group(self, **kwargs) -> None:
         """
@@ -146,12 +163,46 @@ class DataIOButler:
 
         if data_json_str is None:
             raise DataNotFoundError("No data found for the given parameters in the database.")
+        
+        # Extract data from potentially wrapped structure
+        result = MetadataService.extract_data_and_metadata(data_json_str)
+        data_array = result["data"]
 
-        df = pd.read_json(StringIO(data_json_str), orient="records")
+        df = pd.DataFrame(data_array)
         if df.select_dtypes(include=[np.number]).map(np.isinf).any().any():
             df = df.replace([np.inf, -np.inf], np.nan)
 
         return df
+    
+    def get_data_with_metadata(self, *args, **kwargs) -> Dict[str, Any]:
+        """
+        Retrieve stored stock data with metadata from Redis.
+
+        :param prefix:
+        :param stock_id: ID of the stock.
+        :param start_date: Start date for the stock data.
+        :param end_date: End date for the stock data.
+        :return: Dictionary with 'data' (DataFrame) and 'metadata' keys.
+        """
+        storage_unit_identifier = self._select_key_strategy(**kwargs)
+        key = storage_unit_identifier.generate_identifier(**kwargs)
+        data_json_str = self.adapter.get_data(key)
+
+        if data_json_str is None:
+            raise DataNotFoundError("No data found for the given parameters in the database.")
+        
+        # Extract data and metadata
+        result = MetadataService.extract_data_and_metadata(data_json_str)
+        data_array = result["data"]
+        
+        df = pd.DataFrame(data_array)
+        if df.select_dtypes(include=[np.number]).map(np.isinf).any().any():
+            df = df.replace([np.inf, -np.inf], np.nan)
+
+        return {
+            "data": df,
+            "metadata": result["metadata"]
+        }
 
     def update_data(self, updated_dataframe: pd.DataFrame, *args, **kwargs) -> None:
         """
@@ -214,6 +265,49 @@ class DataIOButler:
             pattern = "*"
 
         return self.adapter.keys(pattern=pattern)
+    
+    def list_all_datasets(self, prefix_pattern: str = "stock_data:*") -> list:
+        """
+        List all datasets from Redis with their metadata.
+        
+        :param prefix_pattern: Pattern to match keys (e.g., "stock_data:*")
+        :return: List of dataset summaries with metadata
+        """
+        datasets = []
+        keys = self.adapter.keys(pattern=prefix_pattern)
+        
+        for key in keys:
+            try:
+                # Parse key: prefix:stock_id:start_date:end_date
+                parts = key.split(':')
+                if len(parts) != 4:
+                    continue
+                
+                prefix, stock_id, start_date, end_date = parts
+                
+                # Get data
+                raw_data = self.adapter.get_data(key)
+                if not raw_data:
+                    continue
+                
+                # Extract data and metadata
+                result = MetadataService.extract_data_and_metadata(raw_data)
+                data_array = result["data"]
+                metadata = result["metadata"]
+                
+                datasets.append({
+                    "key": key,
+                    "stock_id": stock_id,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "record_count": len(data_array) if isinstance(data_array, list) else 0,
+                    "metadata": metadata
+                })
+            except Exception as e:
+                # Skip problematic keys
+                continue
+        
+        return datasets
 
 
 if __name__ == "__main__":

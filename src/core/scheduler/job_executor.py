@@ -10,6 +10,7 @@ from utils.data_inbound.data_fetcher import YFinanceFetcher
 from core.manager.data_manager import DataIOButler
 from utils.database_adapters.redis_adapter import RedisAdapter
 from core.scheduler.job_definition import ScheduledJob, JobStatus
+from core.services.metadata_service import MetadataService
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,8 @@ class JobExecutor:
                     stock_id=stock_id,
                     start_date=start_date,
                     end_date=end_date,
-                    prefix=job.prefix
+                    prefix=job.prefix,
+                    job=job
                 )
                 execution_result["fetched_stocks"].append(stock_id)
                 logger.info(f"Successfully fetched and stored data for {stock_id}")
@@ -103,10 +105,11 @@ class JobExecutor:
         stock_id: str,
         start_date: str,
         end_date: str,
-        prefix: str
+        prefix: str,
+        job: Optional[ScheduledJob] = None
     ) -> None:
         """
-        Fetch and store data for a single stock.
+        Fetch and store data for a single stock with metadata.
         Uses existing components without modification.
         
         Args:
@@ -114,6 +117,7 @@ class JobExecutor:
             start_date: Start date for data range
             end_date: End date for data range
             prefix: Redis key prefix
+            job: Optional ScheduledJob instance for metadata creation
         """
         # Fetch data using existing YFinanceFetcher
         self._data_fetcher.fetch_from_source(
@@ -127,13 +131,26 @@ class JobExecutor:
         if df.empty:
             raise JobExecutionError(f"No data returned for {stock_id}")
         
+        # Create metadata if job is provided
+        metadata = None
+        if job is not None:
+            next_update = MetadataService.calculate_next_run_time(job.schedule_time)
+            metadata = MetadataService.create_job_metadata(
+                job_id=job.job_id,
+                job_name=job.name,
+                schedule_time=job.schedule_time,
+                next_update=next_update
+            )
+            logger.info(f"Created metadata for {stock_id} from job {job.name}")
+        
         # Store data using existing DataIOButler
         self._data_butler.save_data(
             data=df,
             prefix=prefix,
             stock_id=stock_id,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            metadata=metadata
         )
     
     @staticmethod

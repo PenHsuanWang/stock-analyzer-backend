@@ -6,6 +6,25 @@ The Python backend server of this project is engineered to serve frontend reques
 
 ---
 
+## Prerequisites
+
+- Python 3.8+
+- Docker and Docker Compose (for Redis)
+
+## Quick Start - Redis Setup
+
+This project requires Redis for data storage. The easiest way to set up Redis is using Docker:
+
+```bash
+# Start Redis service
+docker-compose up -d
+
+# Verify Redis is running
+docker exec stock-analyzer-redis redis-cli ping
+```
+
+For detailed Redis setup instructions, see [REDIS_SETUP.md](REDIS_SETUP.md).
+
 ## Modular Introduction
 
 ### System Architecture
