@@ -9,6 +9,8 @@ from core.scheduler.job_scheduler import JobScheduler
 from core.scheduler.job_registry import JobRegistry
 from core.scheduler.job_executor import JobExecutor
 from core.scheduler.job_definition import ScheduledJob
+from core.scheduler.job_execution_history import JobExecutionRecord
+from core.scheduler.execution_history_registry import ExecutionHistoryRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,8 @@ class SchedulerServingApp:
     def _initialize(self) -> None:
         """Initialize scheduler components."""
         self.registry = JobRegistry()
-        self.executor = JobExecutor()
+        self.history_registry = ExecutionHistoryRegistry()
+        self.executor = JobExecutor(history_registry=self.history_registry)
         self.scheduler = JobScheduler(
             registry=self.registry,
             executor=self.executor
@@ -161,6 +164,49 @@ class SchedulerServingApp:
             "active_jobs_count": len(self.registry.get_active_jobs()),
             "total_jobs_count": len(self.registry.list_jobs())
         }
+    
+    def get_job_execution_history(
+        self,
+        job_id: str,
+        limit: int = 50,
+        status: Optional[str] = None
+    ) -> List[JobExecutionRecord]:
+        """
+        Get execution history for a job.
+        
+        Args:
+            job_id: Job ID to get history for
+            limit: Maximum number of records to return
+            status: Optional status filter
+            
+        Returns:
+            List of JobExecutionRecord
+        """
+        return self.history_registry.get_job_history(job_id, limit=limit, status=status)
+    
+    def get_latest_execution(self, job_id: str) -> Optional[JobExecutionRecord]:
+        """
+        Get the most recent execution for a job.
+        
+        Args:
+            job_id: Job ID
+            
+        Returns:
+            JobExecutionRecord if found, None otherwise
+        """
+        return self.history_registry.get_latest_execution(job_id)
+    
+    def get_execution(self, execution_id: str) -> Optional[JobExecutionRecord]:
+        """
+        Get a specific execution record.
+        
+        Args:
+            execution_id: Execution ID
+            
+        Returns:
+            JobExecutionRecord if found, None otherwise
+        """
+        return self.history_registry.get_execution(execution_id)
 
 
 def get_scheduler_app() -> SchedulerServingApp:

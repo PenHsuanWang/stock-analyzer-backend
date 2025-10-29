@@ -202,3 +202,77 @@ def get_scheduler_status(
 ):
     """Get scheduler status and statistics."""
     return app.get_scheduler_status()
+
+
+@router.get("/jobs/{job_id}/history", response_model=List[dict])
+def get_job_execution_history(
+    job_id: str,
+    limit: int = 50,
+    status: Optional[str] = None,
+    app: SchedulerServingApp = Depends(get_scheduler_app)
+):
+    """
+    Get execution history for a specific job.
+    
+    Query Parameters:
+        limit: Maximum number of records to return (default: 50)
+        status: Filter by status (success, failed, partial_success)
+    
+    Returns:
+        List of execution records, newest first
+    """
+    try:
+        history = app.get_job_execution_history(job_id, limit=limit, status=status)
+        return [record.to_dict() for record in history]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/jobs/{job_id}/latest-execution", response_model=dict)
+def get_latest_execution(
+    job_id: str,
+    app: SchedulerServingApp = Depends(get_scheduler_app)
+):
+    """
+    Get the most recent execution record for a job.
+    
+    Returns:
+        Most recent execution details including errors
+    """
+    try:
+        record = app.get_latest_execution(job_id)
+        if not record:
+            raise HTTPException(
+                status_code=404,
+                detail="No execution history found for this job"
+            )
+        return record.to_dict()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/executions/{execution_id}", response_model=dict)
+def get_execution_details(
+    execution_id: str,
+    app: SchedulerServingApp = Depends(get_scheduler_app)
+):
+    """
+    Get details of a specific execution.
+    
+    Returns:
+        Execution details including errors and timing
+    """
+    try:
+        record = app.get_execution(execution_id)
+        if not record:
+            raise HTTPException(
+                status_code=404,
+                detail="Execution record not found"
+            )
+        return record.to_dict()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

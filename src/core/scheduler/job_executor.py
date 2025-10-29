@@ -11,6 +11,8 @@ from core.manager.data_manager import DataIOButler
 from utils.database_adapters.redis_adapter import RedisAdapter
 from core.scheduler.job_definition import ScheduledJob, JobStatus
 from core.services.metadata_service import MetadataService
+from core.scheduler.job_execution_history import JobExecutionRecord
+from core.scheduler.execution_history_registry import ExecutionHistoryRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -26,15 +28,16 @@ class JobExecutor:
     Wraps existing components without modifying them.
     """
     
-    def __init__(self):
+    def __init__(self, history_registry: Optional[ExecutionHistoryRegistry] = None):
         """Initialize job executor with existing components."""
         self._data_fetcher = YFinanceFetcher()
         self._data_butler = DataIOButler(adapter=RedisAdapter())
         self._execution_lock = threading.Lock()
+        self._history_registry = history_registry or ExecutionHistoryRegistry()
     
     def execute_job(self, job: ScheduledJob) -> dict:
         """
-        Execute a scheduled job.
+        Execute a scheduled job and save execution history.
         
         Args:
             job: ScheduledJob instance to execute
@@ -42,17 +45,30 @@ class JobExecutor:
         Returns:
             dict: Execution result with status and details
         """
+        start_time = datetime.now()
+        
+        # Create execution record
+        execution_record = JobExecutionRecord(
+            job_id=job.job_id,
+            job_name=job.name,
+            start_time=start_time,
+            status="running",
+            total_stocks=len(job.stock_ids),
+            triggered_by="scheduler_auto"
+        )
+        
         execution_result = {
             "job_id": job.job_id,
             "job_name": job.name,
-            "start_time": datetime.now().isoformat(),
+            "execution_id": execution_record.execution_id,
+            "start_time": start_time.isoformat(),
             "status": "success",
             "fetched_stocks": [],
             "failed_stocks": [],
             "errors": []
         }
         
-        logger.info(f"Starting execution of job: {job.name} ({job.job_id})")
+        logger.info(f"Starting execution of job: {job.name} ({job.job_id}), execution_id: {execution_record.execution_id}")
         
         # Calculate date range with sliding window support
         end_date = job.end_date or date.today().isoformat()
@@ -75,6 +91,7 @@ class JobExecutor:
                     job=job
                 )
                 execution_result["fetched_stocks"].append(stock_id)
+                execution_record.fetched_stocks.append(stock_id)
                 logger.info(f"Successfully fetched and stored data for {stock_id}")
                 
             except Exception as e:
@@ -82,15 +99,33 @@ class JobExecutor:
                 logger.error(error_msg)
                 execution_result["failed_stocks"].append(stock_id)
                 execution_result["errors"].append(error_msg)
+                execution_record.failed_stocks.append(stock_id)
+                execution_record.errors.append(error_msg)
         
         # Determine overall status
         if execution_result["failed_stocks"]:
             if execution_result["fetched_stocks"]:
                 execution_result["status"] = "partial_success"
+                execution_record.status = "partial_success"
             else:
                 execution_result["status"] = "failed"
+                execution_record.status = "failed"
+        else:
+            execution_result["status"] = "success"
+            execution_record.status = "success"
         
-        execution_result["end_time"] = datetime.now().isoformat()
+        # Complete execution record
+        end_time = datetime.now()
+        execution_result["end_time"] = end_time.isoformat()
+        execution_record.end_time = end_time
+        execution_record.duration_seconds = (end_time - start_time).total_seconds()
+        
+        # Save execution history
+        try:
+            self._history_registry.save_execution(execution_record)
+            logger.info(f"Saved execution history for {execution_record.execution_id}")
+        except Exception as e:
+            logger.error(f"Failed to save execution history: {str(e)}")
         
         logger.info(
             f"Completed job: {job.name}. "
